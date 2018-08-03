@@ -114,6 +114,8 @@ PAGE 0:    /* Program Memory */
    ROM         : origin = 0x3FF27C, length = 0x000D44     /* Boot ROM */
    RESET       : origin = 0x3FFFC0, length = 0x000002     /* part of boot ROM  */
    VECTORS     : origin = 0x3FFFC2, length = 0x00003E     /* part of boot ROM  */
+   //FLASHC      : origin = 0x3F5000, length = 0x001000     /* on-chip FLASH */
+   FLASHD      : origin = 0x3F4000, length = 0x002000     /* on-chp FLASH */
 
 PAGE 1 :   /* Data Memory */
            /* Memory (RAM/FLASH/OTP) blocks can be moved to PAGE0 for program allocation */
@@ -145,9 +147,9 @@ SECTIONS
                          RUN_START(_RamfuncsRunStart),
                          PAGE = 0
 
-   .cinit              : >  FLASHA | FLASHB,      PAGE = 0
-   .pinit              : >  FLASHA | FLASHB,      PAGE = 0
-   .text               : >> FLASHA | FLASHB,      PAGE = 0
+   .cinit              : >  FLASHA | FLASHB | FLASHD,      PAGE = 0
+   .pinit              : >  FLASHA | FLASHB | FLASHD,      PAGE = 0
+   .text               : >> FLASHA | FLASHB | FLASHD,      PAGE = 0
 
    csmpasswds          : > CSM_PWL_P0,  PAGE = 0
    csm_rsvd            : > CSM_RSVD,    PAGE = 0
@@ -159,11 +161,11 @@ SECTIONS
 
    /* Initalized sections go in Flash */
    /* For SDFlash to program these, they must be allocated to page 0 */
-   .econst             : >> FLASHA | FLASHB,   PAGE = 0
-   .switch             : >> FLASHA | FLASHB,   PAGE = 0
+   .econst             : >> FLASHA | FLASHB | FLASHD,   PAGE = 0
+   .switch             : >> FLASHA | FLASHB | FLASHD,   PAGE = 0
 
    /* Allocate IQ math areas: */
-   IQmath              : >> FLASHA | FLASHB,   PAGE = 0            /* Math Code */
+   IQmath              : >> FLASHA | FLASHB | FLASHD,   PAGE = 0            /* Math Code */
    IQmathTables        : >  IQTABLES,          PAGE = 0, TYPE = NOLOAD
 
    /* Uncomment the section below if calling the IQNexp() or IQexp()

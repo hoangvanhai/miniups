@@ -7,20 +7,18 @@
 /*-------------------------------------------------------------------*/
 static void outbyte(unsigned char c) 
 {
-    (void)c;
-	//XMC_UART_CH_Transmit(UART[debug_port], c);
+	UART_Send(c);
 }
 void putchar1(unsigned char c) 
 {
     (void)c;
     RS485_DEBUG_SEND_ENABLE;
-    //XMC_UART_CH_Transmit(UART[debug_port], c);
+    UART_Send(c);
     RS485_DEBUG_RECV_ENABLE;
 }
 void putchar2(unsigned char c) 
 {	
-    (void)c;
-	//XMC_UART_CH_Transmit(UART[debug_port], c);
+    UART_Send(c);
 }
 /*-------------------------------------------------------------------*/
 

@@ -39,8 +39,11 @@ Bsp/BSP.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/limits.h
 Bsp/BSP.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/DPlib.h
 Bsp/BSP.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/app.h
 Bsp/BSP.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/Booster/booster.h
+Bsp/BSP.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/PIDCtrl/pid.h
 Bsp/BSP.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/Inverter/inverter.h
 Bsp/BSP.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/SineGen.h
+Bsp/BSP.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/console.h
+Bsp/BSP.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/printf.h
 Bsp/BSP.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/utils.h
 
 ../Bsp/BSP.c: 
@@ -82,6 +85,9 @@ C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/limits.h:
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/DPlib.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/app.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/Booster/booster.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/PIDCtrl/pid.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/Inverter/inverter.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/SineGen.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/console.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/printf.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/utils.h: 

@@ -6,21 +6,21 @@ SHELL = cmd.exe
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../Console/printf.c 
+../Application/PIDCtrl/pid.c 
 
 C_DEPS += \
-./Console/printf.d 
+./Application/PIDCtrl/pid.d 
 
 OBJS += \
-./Console/printf.obj 
+./Application/PIDCtrl/pid.obj 
 
 OBJS__QUOTED += \
-"Console\printf.obj" 
+"Application\PIDCtrl\pid.obj" 
 
 C_DEPS__QUOTED += \
-"Console\printf.d" 
+"Application\PIDCtrl\pid.d" 
 
 C_SRCS__QUOTED += \
-"../Console/printf.c" 
+"../Application/PIDCtrl/pid.c" 
 
 

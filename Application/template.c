@@ -1,6 +1,26 @@
-
+/** @FILE NAME:    template.c
+ *  @DESCRIPTION:  This file for ...
+ *
+ *  Copyright (c) 2018 EES Ltd.
+ *  All Rights Reserved This program is the confidential and proprietary
+ *  product of ViettelR&D. Any Unauthorized use, reproduction or transfer
+ *  of this program is strictly prohibited.
+ *
+ *  @Author: HaiHoang
+ *  @NOTE:   No Note at the moment
+ *  @BUG:    No known bugs.
+ *
+ *<pre>
+ *  MODIFICATION HISTORY:
+ *
+ *  Ver   Who       Date                Changes
+ *  ----- --------- ------------------  ----------------------------------------
+ *  1.00  HaiHoang  August 1, 2018      First release
+ *
+ *
+ *</pre>
+******************************************************************************/
 /***************************** Include Files *********************************/
-#include "template.h"
 
 /************************** Constant Definitions *****************************/
 
@@ -21,11 +41,6 @@
  *  @return Void.
  *  @note
  */
-
-void Led_init()
-{	
-
-}
 
 
 

@@ -114,6 +114,7 @@ SUBDIRS := \
 . \
 Application/Booster \
 Application/Inverter \
+Application/PIDCtrl \
 Application \
 Bsp \
 Console \

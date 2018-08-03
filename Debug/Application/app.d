@@ -38,8 +38,11 @@ Application/app.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Hardware/com
 Application/app.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/BSP.h
 Application/app.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/HardwareProfile.h
 Application/app.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/AppConfig.h
+Application/app.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/PIDCtrl/pid.h
 Application/app.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/Inverter/inverter.h
 Application/app.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/SineGen.h
+Application/app.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/console.h
+Application/app.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/printf.h
 Application/app.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/utils.h
 Application/app.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/Timer.h
 
@@ -81,7 +84,10 @@ D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Hardware/common/include/f2802x_de
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/BSP.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/HardwareProfile.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/AppConfig.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/PIDCtrl/pid.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/Inverter/inverter.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/SineGen.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/console.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/printf.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/utils.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/Timer.h: 

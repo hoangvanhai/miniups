@@ -33,25 +33,23 @@
 
 void Inv_Init(SInverter *pInv) {
     pInv->eState        = INV_IDLE;
-    pInv->freq          = Base_Freq;
-    pInv->period        = (uint16_t)((FTBCLK / Base_Freq) - 1);
+    pInv->freq          = Inverter_Pwm_Freq;
+    pInv->period        = (uint16_t)((FTBCLK / Inverter_Pwm_Freq));
+    pInv->periodIQ      = _IQ(pInv->period);
     pInv->dutyv         = 0;
     pInv->pwm1Handle    = (PWM_REGS *)&EPwm1Regs;
     pInv->pwm2Handle    = (PWM_REGS *)&EPwm2Regs;
     PWM_Inv_Init(pInv->pwm1Handle, pInv->pwm2Handle, pInv->freq);
-    pInv->pSinGen = &sSine1Phase;
 
-    SINE1PHASE_RESET(pInv->pSinGen);
-    pInv->pSinGen->cFreq   = 1000;
-    pInv->pSinGen->freq    = Inverter_Output_Freq;
+    Sin_Init(&pInv->sSine1Phase, Inverter_Sin_Freq,
+             Inverter_GenSin_Freq, _IQ(Inverter_Sin_Freq * 2 * PI / Inverter_GenSin_Freq),
+             _IQ(Inverter_Start_Mf), _IQ(1.0));
 
-    //sSine1Phase.stepD = 360 / (Inverter_Update_Freq / Inverter_Output_Freq);
+    pInv->gainStep              = _IQ18(Inverter_Step_Mf);         // set gain step is 0.01
+    pInv->gainMax               = _IQ(Inverter_Max_Mf);
 
-    pInv->pSinGen->stepD   = _IQ(Inverter_Step_Angle);    // Interrupt freq = 25Khz =>
-                                        // freq of sin = 25k / 50 = 500 =>
-                                        // 1 interrupt inc 0.72 degree
-    pInv->pSinGen->gain    = _IQ(Inverter_Start_Mf);
-    pInv->gainStep         = _IQ(Inverter_Step_Mf);         // set gain step is 0.01
+    pInv->aCoeff                = _IQ18(A_COEFF);
+    pInv->bCoeff                = _IQ18(B_COEFF);
 }
 
 /*****************************************************************************/
@@ -63,9 +61,9 @@ void Inv_Init(SInverter *pInv) {
  *  @note
  */
 void Inv_Start(SInverter *pInv) {
-    SINE1PHASE_RESET(pInv->pSinGen);
-    pInv->pSinGen->gain    = _IQ(Inverter_Start_Mf);
-    pInv->eState        = INV_RUNNING;
+    SINE1PHASE_RESET(&pInv->sSine1Phase);
+    pInv->sSine1Phase.gain     = _IQ(Inverter_Start_Mf);
+    pInv->eState                = INV_RUNNING;
 }
 
 /*****************************************************************************/
@@ -78,8 +76,14 @@ void Inv_Start(SInverter *pInv) {
  */
 void Inv_Stop(SInverter *pInv) {
     pInv->eState = INV_IDLE;
-    PWM_2ChCntUpSetDutyFull(pInv->pwm1Handle, 1, 0, 1);
-    PWM_2ChCntUpSetDutyFull(pInv->pwm2Handle, 1, 0, 1);
+#if Inverter_Switching_Type == Inverter_Type_Open_Half
+    PWM_2ChCntUpSetDutyHalf(pInv->pwm1Handle, 1, 0);
+    PWM_2ChCntUpSetDutyHalf(pInv->pwm2Handle, 2, 0);
+#elif Inverter_Switching_Type == Inverter_Type_Open_Full
+    pInv->pwm1Handle->CMPA.half.CMPA = 0;
+    pInv->pwm2Handle->CMPA.half.CMPA = 0;
+#endif
+    LREP("Stop Inverter\r\n");
 }
 
 /*****************************************************************************/
@@ -92,7 +96,6 @@ void Inv_Stop(SInverter *pInv) {
  *  module must config is slave
  */
 
-#define TEST_PWM_DEAD_BAND
 
 void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
 
@@ -122,12 +125,12 @@ void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
     PWM_2ChCntUpHalfCfg(pwm1, freq, 1, 0);
     PWM_2ChCntUpHalfCfg(pwm2, freq, 0, 0);
 #elif Inverter_Switching_Type == Inverter_Type_Open_Full
-    PWM_2ChCntUpDownFullCfg(pwm1, freq, 0, 0);
+    PWM_2ChCntUpDownFullCfg(pwm1, freq, 1, 0);
     PWM_2ChCntUpDownFullCfg(pwm2, freq, 0, 0);
 
 #ifdef TEST_INV_PWM_SETTING
-//    PWM_2ChCntUpSetDutyFull(pwm1, 1, 200, 0);
-//    PWM_2ChCntUpSetDutyFull(pwm2, 2, 200, 0);
+    PWM_2ChCntUpSetDutyFull(pwm1, 1, 300, 1);
+    PWM_2ChCntUpSetDutyFull(pwm2, 2, 300, 1);
 #endif
 
 #endif
@@ -161,9 +164,9 @@ void Inv_Set(SInverter *pInv, uint16_t chan, _iq percen) {
  *  @note
  */
 void Inv_SetGain(SInverter *pInv, _iq gain) {
-    if(gain > _IQ(1.0))
+    if(_IQabs(gain) > _IQ(1.0))
         return;
-    pInv->pSinGen->gain = gain;
+    pInv->sSine1Phase.gain = _IQabs(gain);
 }
 
 /*****************************************************************************/

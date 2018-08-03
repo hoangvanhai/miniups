@@ -50,6 +50,7 @@
 									<listOptionValue builtIn="false" value="${PROJECT_LOC}/Bsp"/>
 									<listOptionValue builtIn="false" value="${PROJECT_LOC}/Application/Booster"/>
 									<listOptionValue builtIn="false" value="${PROJECT_LOC}/Application/Inverter"/>
+									<listOptionValue builtIn="false" value="${PROJECT_LOC}/Application/PIDCtrl"/>
 									<listOptionValue builtIn="false" value="${PROJECT_LOC}/Hardware/libraries/math/IQmath/c28/include"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.C2000_16.9.compilerID.ADVICE__PERFORMANCE.542453241" name="Provide advice on optimization techniques (--advice:performance)" superClass="com.ti.ccstudio.buildDefinitions.C2000_16.9.compilerID.ADVICE__PERFORMANCE" value="--advice:performance=all" valueType="string"/>
@@ -101,7 +102,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="F28020.cmd|F2802x_generic_ram.cmd|Hardware/common/source/f2802x_usdelay.asm" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="Console/console.c|Lib/dispatcher.c|F2802x_generic_ram.cmd|F28020.cmd|Hardware/common/source/f2802x_usdelay.asm" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

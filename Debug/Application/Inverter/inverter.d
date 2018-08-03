@@ -38,6 +38,9 @@ Application/Inverter/inverter.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUP
 Application/Inverter/inverter.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/HardwareProfile.h
 Application/Inverter/inverter.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/AppConfig.h
 Application/Inverter/inverter.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/SineGen.h
+Application/Inverter/inverter.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/console.h
+Application/Inverter/inverter.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/printf.h
+Application/Inverter/inverter.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/utils.h
 
 ../Application/Inverter/inverter.c: 
 ../Application/Inverter/inverter.h: 
@@ -77,3 +80,6 @@ D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/BSP.h:
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/HardwareProfile.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/AppConfig.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/SineGen.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/console.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/printf.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/utils.h: 

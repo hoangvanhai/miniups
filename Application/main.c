@@ -5,6 +5,8 @@
 #include <app.h>
 #include <Timer.h>
 #include <IQmathLib.h>
+#include <console.h>
+
 
 /************************** Constant Definitions *****************************/
 
@@ -27,15 +29,17 @@ TimerHandle testTimer = NULL;
  *  @note
  */
 void Clb_Timer(uint32_t timeTick, void *p_arg) {
+//    static uint16_t duty = 0;
     (void)timeTick;
     (void)p_arg;
-//    static uint16_t count = 0;
-//    count++;
-//    if(count % 5 == 0) {
-//        Inv_Start(&sApp.sInverter);
-//    } else {
-//        Inv_Stop(&sApp.sInverter);
-//    }
+
+//    duty += 10;
+//
+//    if(duty >= 800) duty = 0;
+//
+//    PWM_2ChUpDownBoostSetDuty(sApp.sBooster.pwmAHandle, duty);
+//    PWM_2ChUpDownBoostSetDuty(sApp.sBooster.pwmBHandle, duty);
+
     GPIO_TOGGLE_RUN();
 }
 
@@ -48,35 +52,17 @@ void Clb_Timer(uint32_t timeTick, void *p_arg) {
  *  @note
  */
 
-#define PI      3.1415926535897932384626433832795
-#define PI2     1.570796326794897
-#define PIIQ    _IQ(PI)
-#define PI2IQ   _IQ(PI2)
-#define DEG     _IQ(0.0174532925199433)
+
 
 void main(void)
 {
-    //_iq sinValue = 0;
-    //int i = 0;
-
-    //SINE1PHASE_RESET(sSine1Phase);
-    //sSine1Phase.stepD = 20;
-
-
+    // Hardware Init
     BSP_Init();
+    // Application Init
     App_Init(&sApp);
 
-//    for(; i < 18; i++) {
-//        sinValue = Sin_GenValue(&sSine1Phase);
-//        if(sinValue >= 0) {
-//            Inv_Set(&sApp.sInverter, 2, 0);
-//            Inv_Set(&sApp.sInverter, 1, sinValue);
-//        } else {
-//            Inv_Set(&sApp.sInverter, 1, 0);
-//            Inv_Set(&sApp.sInverter, 2, sinValue);
-//        }
-//
-//    }
+    LREP("\r\nHello world C2000 - MINIUPS application\r\n");
+    LREP("*****************************************\r\n");
 
 
     testTimer = Timer_Create(Clb_Timer, NULL);

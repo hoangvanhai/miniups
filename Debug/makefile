@@ -12,13 +12,13 @@ GEN_CMDS__FLAG :=
 ORDERED_OBJS += \
 "./Application/Booster/booster.obj" \
 "./Application/Inverter/inverter.obj" \
+"./Application/PIDCtrl/pid.obj" \
 "./Application/SineGen.obj" \
 "./Application/app.obj" \
 "./Application/isr.obj" \
 "./Application/main.obj" \
 "./Application/template.obj" \
 "./Bsp/BSP.obj" \
-"./Console/console.obj" \
 "./Console/printf.obj" \
 "./Hardware/common/source/f2802x_adc.obj" \
 "./Hardware/common/source/f2802x_asmfuncs.obj" \
@@ -38,7 +38,6 @@ ORDERED_OBJS += \
 "./Hardware/common/source/f2802x_sysctrl.obj" \
 "./Hardware/headers/source/F2802x_GlobalVariableDefs.obj" \
 "./Lib/Timer.obj" \
-"./Lib/dispatcher.obj" \
 "./Lib/utils.obj" \
 "../F2802x_Headers_nonBIOS.cmd" \
 "../F2802x_generic_flash.cmd" \
@@ -59,6 +58,7 @@ RMDIR := RMDIR /S/Q
 -include subdir_vars.mk
 -include Application/Booster/subdir_vars.mk
 -include Application/Inverter/subdir_vars.mk
+-include Application/PIDCtrl/subdir_vars.mk
 -include Application/subdir_vars.mk
 -include Bsp/subdir_vars.mk
 -include Console/subdir_vars.mk
@@ -69,6 +69,7 @@ RMDIR := RMDIR /S/Q
 -include subdir_rules.mk
 -include Application/Booster/subdir_rules.mk
 -include Application/Inverter/subdir_rules.mk
+-include Application/PIDCtrl/subdir_rules.mk
 -include Application/subdir_rules.mk
 -include Bsp/subdir_rules.mk
 -include Console/subdir_rules.mk
@@ -205,9 +206,9 @@ MiniUPS.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "Application\Booster\booster.obj" "Application\Inverter\inverter.obj" "Application\SineGen.obj" "Application\app.obj" "Application\isr.obj" "Application\main.obj" "Application\template.obj" "Bsp\BSP.obj" "Console\console.obj" "Console\printf.obj" "Hardware\common\source\f2802x_adc.obj" "Hardware\common\source\f2802x_asmfuncs.obj" "Hardware\common\source\f2802x_codestartbranch.obj" "Hardware\common\source\f2802x_comp.obj" "Hardware\common\source\f2802x_cputimers.obj" "Hardware\common\source\f2802x_defaultisr.obj" "Hardware\common\source\f2802x_ecap.obj" "Hardware\common\source\f2802x_epwm.obj" "Hardware\common\source\f2802x_gpio.obj" "Hardware\common\source\f2802x_i2c.obj" "Hardware\common\source\f2802x_osccomp.obj" "Hardware\common\source\f2802x_piectrl.obj" "Hardware\common\source\f2802x_pievect.obj" "Hardware\common\source\f2802x_sci.obj" "Hardware\common\source\f2802x_spi.obj" "Hardware\common\source\f2802x_sysctrl.obj" "Hardware\headers\source\F2802x_GlobalVariableDefs.obj" "Lib\Timer.obj" 
-	-$(RM) "Lib\dispatcher.obj" "Lib\utils.obj" 
-	-$(RM) "Application\Booster\booster.d" "Application\Inverter\inverter.d" "Application\SineGen.d" "Application\app.d" "Application\isr.d" "Application\main.d" "Application\template.d" "Bsp\BSP.d" "Console\console.d" "Console\printf.d" "Hardware\common\source\f2802x_adc.d" "Hardware\common\source\f2802x_comp.d" "Hardware\common\source\f2802x_cputimers.d" "Hardware\common\source\f2802x_defaultisr.d" "Hardware\common\source\f2802x_ecap.d" "Hardware\common\source\f2802x_epwm.d" "Hardware\common\source\f2802x_gpio.d" "Hardware\common\source\f2802x_i2c.d" "Hardware\common\source\f2802x_osccomp.d" "Hardware\common\source\f2802x_piectrl.d" "Hardware\common\source\f2802x_pievect.d" "Hardware\common\source\f2802x_sci.d" "Hardware\common\source\f2802x_spi.d" "Hardware\common\source\f2802x_sysctrl.d" "Hardware\headers\source\F2802x_GlobalVariableDefs.d" "Lib\Timer.d" "Lib\dispatcher.d" "Lib\utils.d" 
+	-$(RM) "Application\Booster\booster.obj" "Application\Inverter\inverter.obj" "Application\PIDCtrl\pid.obj" "Application\SineGen.obj" "Application\app.obj" "Application\isr.obj" "Application\main.obj" "Application\template.obj" "Bsp\BSP.obj" "Console\printf.obj" "Hardware\common\source\f2802x_adc.obj" "Hardware\common\source\f2802x_asmfuncs.obj" "Hardware\common\source\f2802x_codestartbranch.obj" "Hardware\common\source\f2802x_comp.obj" "Hardware\common\source\f2802x_cputimers.obj" "Hardware\common\source\f2802x_defaultisr.obj" "Hardware\common\source\f2802x_ecap.obj" "Hardware\common\source\f2802x_epwm.obj" "Hardware\common\source\f2802x_gpio.obj" "Hardware\common\source\f2802x_i2c.obj" "Hardware\common\source\f2802x_osccomp.obj" "Hardware\common\source\f2802x_piectrl.obj" "Hardware\common\source\f2802x_pievect.obj" "Hardware\common\source\f2802x_sci.obj" "Hardware\common\source\f2802x_spi.obj" "Hardware\common\source\f2802x_sysctrl.obj" "Hardware\headers\source\F2802x_GlobalVariableDefs.obj" 
+	-$(RM) "Lib\Timer.obj" "Lib\utils.obj" 
+	-$(RM) "Application\Booster\booster.d" "Application\Inverter\inverter.d" "Application\PIDCtrl\pid.d" "Application\SineGen.d" "Application\app.d" "Application\isr.d" "Application\main.d" "Application\template.d" "Bsp\BSP.d" "Console\printf.d" "Hardware\common\source\f2802x_adc.d" "Hardware\common\source\f2802x_comp.d" "Hardware\common\source\f2802x_cputimers.d" "Hardware\common\source\f2802x_defaultisr.d" "Hardware\common\source\f2802x_ecap.d" "Hardware\common\source\f2802x_epwm.d" "Hardware\common\source\f2802x_gpio.d" "Hardware\common\source\f2802x_i2c.d" "Hardware\common\source\f2802x_osccomp.d" "Hardware\common\source\f2802x_piectrl.d" "Hardware\common\source\f2802x_pievect.d" "Hardware\common\source\f2802x_sci.d" "Hardware\common\source\f2802x_spi.d" "Hardware\common\source\f2802x_sysctrl.d" "Hardware\headers\source\F2802x_GlobalVariableDefs.d" "Lib\Timer.d" "Lib\utils.d" 
 	-$(RM) "Hardware\common\source\f2802x_asmfuncs.d" "Hardware\common\source\f2802x_codestartbranch.d" 
 	-@echo 'Finished clean'
 	-@echo ' '

@@ -1,7 +1,28 @@
 #ifndef LED_H_
 #define LED_H_
 
-
+/** @FILE NAME:    template.h
+ *  @DESCRIPTION:  This file for ...
+ *
+ *  Copyright (c) 2018 EES Ltd.
+ *  All Rights Reserved This program is the confidential and proprietary
+ *  product of ViettelR&D. Any Unauthorized use, reproduction or transfer
+ *  of this program is strictly prohibited.
+ *
+ *  @Author: HaiHoang
+ *  @NOTE:   No Note at the moment
+ *  @BUG:    No known bugs.
+ *
+ *<pre>
+ *  MODIFICATION HISTORY:
+ *
+ *  Ver   Who       Date                Changes
+ *  ----- --------- ------------------  ----------------------------------------
+ *  1.00  HaiHoang  August 1, 2018      First release
+ *
+ *
+ *</pre>
+ ******************************************************************************/
 
 /***************************** Include Files *********************************/
 
@@ -11,16 +32,7 @@
 
 /***************** Macros (Inline Functions) Definitions *********************/
 
-#define Led_Toggle(Led) {Led ^= 1;}
-
-#define Led_On(Led) 	{Led = 0;}
-
-#define Led_Off(Led) 	{Led = 1;}
-
 /************************** Function Prototypes ******************************/
-
-void Led_init();
-
 
 /************************** Variable Definitions *****************************/
 

@@ -15,9 +15,14 @@
 #include <DSP28x_Project.h>
 #include <BSP.h>
 #include <SineGen.h>
+#include <console.h>
 /************************** Constant Definitions *****************************/
-
-
+// for [50 : 60] -> 34VAC
+#define A_COEFF         62.3917748105776
+#define B_COEFF         110.0
+// for [320 : 350] -> 220VAC
+//#define A_COEFF         -359.981634058608
+//#define B_COEFF         670.0
 /**************************** Type Definitions *******************************/
 typedef enum EInverterMode_ {
     INV_SET_HALF_HIGH = 0,
@@ -33,21 +38,34 @@ typedef enum EInverterState_ {
 typedef struct SInverter_ {
     EInverterState  eState;
     EInverterMode   eMode;
-    PWM_REGS    *pwm1Handle;
-    PWM_REGS    *pwm2Handle;
-    SSin1Phase  *pSinGen;
-    uint32_t    freq;
-    uint16_t    period;
-    uint16_t    dutyv;          // duty value
-    _iq         gainStep;
+    PWM_REGS        *pwm1Handle;
+    PWM_REGS        *pwm2Handle;
+    SSin1Phase      sSine1Phase;
+    uint32_t        freq;
+    uint16_t        period;
+    uint16_t        dutyv;          // duty value
+    _iq             periodIQ;
+    _iq             gainMax;
+    _iq             gainStep;
+    _iq             aCoeff;
+    _iq             bCoeff;
 }SInverter;
 
 /***************** Macros (Inline Functions) Definitions *********************/
 #define Inv_SetMode(pInv, mode)     (pInv)->eMode = mode
 #define Inv_SetState(pInv, state)   (pInv)->eState = state
-#define Inv_GetGain(pInv)           (pInv)->pSinGen->gain
+#define Inv_GetGain(pInv)           (pInv)->sSine1Phase.gain
 #define Inv_GetGainStep(pInv)       (pInv)->gainStep
 
+
+/*
+ Function to calculate value of duty for stable voltage output:
+
+ y = -62.3917748105776*x + 110
+ -> x = (110 - y) /  62.3917748105776
+ -> duty = (110 - boostVolt) / 62.3917748105776
+
+*/
 /************************** Function Prototypes ******************************/
 void Inv_Init(SInverter *pInv);
 void Inv_Start(SInverter *pInv);

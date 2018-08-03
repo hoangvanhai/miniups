@@ -27,6 +27,7 @@ extern __interrupt void cpu_timer0_isr(void);
 extern __interrupt void cpu_timer1_isr(void);
 extern __interrupt void cpu_timer2_isr(void);
 extern __interrupt void adc_isr(void);
+void Test_Pwm();
 /************************** Variable Definitions *****************************/
 
 
@@ -68,11 +69,15 @@ void BSP_Init(void) {
     InitCpuTimers();
     TIMER_Cpu0_Init(TIMER0_PERIOD);
 #ifndef TEST_INV_PWM_SETTING
-    TIMER_Cpu1_Init(TIMER1_PERIOD);
+    TIMER_Cpu1_Init(Inverter_GenSin_Period);
 #endif
     //TIMER_Cpu2_Init(TIMER2_PERIOD);
 
+    //Test_Pwm();
+
     ADC_Init();
+
+    UART_Init();
 }
 
 /*****************************************************************************/
@@ -205,8 +210,95 @@ void TIMER_Cpu2_Init(uint32_t period) {
  */
 void UART_Init() {
 
+    EALLOW;
+    //
+    // Enable pull-up for GPIO28 (SCIRXDA)
+    //
+    //GpioCtrlRegs.GPAPUD.bit.GPIO28 = 0;
+
+    //
+    // Enable pull-up for GPIO19 (SCIRXDA)
+    //
+    //GpioCtrlRegs.GPAPUD.bit.GPIO19 = 0;
+
+    //
+    // Enable pull-up for GPIO7  (SCIRXDA)
+    //
+    //GpioCtrlRegs.GPAPUD.bit.GPIO7 = 0;
+
+    //
+    // Disable pull-up for GPIO29 (SCITXDA)
+    //
+    GpioCtrlRegs.GPAPUD.bit.GPIO29 = 1;
+
+    //
+    // Disable pull-up for GPIO18 (SCITXDA)
+    //
+    //GpioCtrlRegs.GPAPUD.bit.GPIO18 = 1;
+
+    //
+    // Disable pull-up for GPIO12 (SCITXDA)
+    //
+    //GpioCtrlRegs.GPAPUD.bit.GPIO12 = 1;
+
+    //
+    // Set qualification for selected pins to asynch only
+    // Inputs are synchronized to SYSCLKOUT by default.
+    // This will select asynch (no qualification) for the selected pins.
+    //
+    //GpioCtrlRegs.GPAQSEL2.bit.GPIO28 = 3;  // Asynch input GPIO28 (SCIRXDA)
+    //GpioCtrlRegs.GPAQSEL2.bit.GPIO19 = 3;  // Asynch input GPIO19 (SCIRXDA)
+    //GpioCtrlRegs.GPAQSEL1.bit.GPIO7 = 3;   // Asynch input GPIO7 (SCIRXDA)
+
+    //
+    // Configure SCI-A pins using GPIO regs
+    // This specifies which of the possible GPIO pins will be SCI functional
+    // pins.
+    //
+    //GpioCtrlRegs.GPAMUX2.bit.GPIO28 = 1;   // Configure GPIO28 for SCIRXDA
+    //GpioCtrlRegs.GPAMUX2.bit.GPIO19 = 2;   // Configure GPIO19 for SCIRXDA
+    //GpioCtrlRegs.GPAMUX1.bit.GPIO7 = 2;    // Configure GPIO7  for SCIRXDA
+
+    GpioCtrlRegs.GPAMUX2.bit.GPIO29 = 1;   // Configure GPIO29 for SCITXDA
+    //GpioCtrlRegs.GPAMUX2.bit.GPIO18 = 2;   // Configure GPIO18 for SCITXDA
+    //GpioCtrlRegs.GPAMUX1.bit.GPIO12 = 2;   // Configure GPIO12 for SCITXDA
+
+    EDIS;
+
+    // 1 stop bit,  No loopback, No parity, 8 char bits, async mode,
+    // idle-line protocol
+    //
+    SciaRegs.SCICCR.all =0x0007;
+
+    //
+    // enable TX, RX, internal SCICLK, Disable RX ERR, SLEEP, TXWAKE
+    //
+    SciaRegs.SCICTL1.all =0x0003;
+    SciaRegs.SCICTL2.all =0x0003;
+    SciaRegs.SCICTL2.bit.TXINTENA =0;
+    SciaRegs.SCICTL2.bit.RXBKINTENA =0;
+    SciaRegs.SCIHBAUD    =0x0000;
+
+    SciaRegs.SCICTL1.all =0x0023;       // Relinquish SCI from Reset
+
+    //SciaRegs.SCILBAUD  =0x00A2;      // A2h = 19.2Kbaud @ LSPCLK = 100/4 MHz
+    //SciaRegs.SCILBAUD  =0x0050;      // 50h = 38.4Kbaud @ LSPCLK = 100/4 MHz
+    //SciaRegs.SCILBAUD = 0x0035;      // 35h = 57.6Kbaud @ LSPCLK = 100/4 MHz
+    SciaRegs.SCILBAUD = SCI_PRD;        //0x001B;        // 1Bh = 115.2Kbaud @ LSPCLK = 100/4 MHz
+
+    //SciaRegs.SCIFFTX.all=0xE040;      // ENable FIFO enhancement
+    SciaRegs.SCIFFTX.all=0x8040;        // DISable FIFO enhancement
+    SciaRegs.SCIFFRX.all=0x204f;
+    SciaRegs.SCIFFCT.all=0x0;
+    SciaRegs.SCIPRI.bit.SOFT=0x0;
+    SciaRegs.SCIPRI.bit.FREE=0x1;
+
 }
 
+void UART_Send(int ch) {
+    while (SciaRegs.SCICTL2.bit.TXRDY != 1);
+    SciaRegs.SCITXBUF=ch;
+}
 
 /*****************************************************************************/
 /** @brief
@@ -371,9 +463,9 @@ void GPIO_Output_Init() {
     /*
      * DRV_EN2 - GPIO29
      */
-    GpioCtrlRegs.GPAMUX2.bit.GPIO29 = 0;    // 0=GPIO,  1=SCITX-A,  2=I2C-SCL,  3=TZ3
-    GpioCtrlRegs.GPADIR.bit.GPIO29 = 1;     // 1=OUTput,  0=INput
-    GpioDataRegs.GPACLEAR.bit.GPIO29 = 1;   // uncomment if --> Set Low initially
+//    GpioCtrlRegs.GPAMUX2.bit.GPIO29 = 0;    // 0=GPIO,  1=SCITX-A,  2=I2C-SCL,  3=TZ3
+//    GpioCtrlRegs.GPADIR.bit.GPIO29 = 1;     // 1=OUTput,  0=INput
+//    GpioDataRegs.GPACLEAR.bit.GPIO29 = 1;   // uncomment if --> Set Low initially
     //GpioDataRegs.GPASET.bit.GPIO29 = 1;     // uncomment if --> Set High initially
 
     /*
@@ -479,6 +571,106 @@ void GPIO_Input_Init() {
     //GpioDataRegs.GPASET.bit.GPIO19 = 1;     // uncomment if --> Set High initially
 
     EDIS;
+}
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+EPwmRet PWM_2ChCntUpDownBoostCfg(struct EPWM_REGS* pwm, uint32_t freq,
+                                 int16_t mode, int16_t phase, int16_t channel) {
+
+    uint16_t period = (FTBCLK / freq);
+
+    if(pwm == NULL)
+        return PWM_ERROR_HANDLE;
+
+    EALLOW;
+    // Time Base SubModule Registers
+    pwm->TBCTL.bit.PRDLD     = TB_IMMEDIATE;  // set Immediate load
+    pwm->TBPRD               = period >> 1;              // PWM frequency = 1 / period
+    pwm->TBPHS.half.TBPHS    = 0;
+    pwm->TBCTR               = 0;
+
+    pwm->TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN;
+    pwm->TBCTL.bit.HSPCLKDIV = TB_DIV1;
+    pwm->TBCTL.bit.CLKDIV = TB_DIV1;
+
+    if(mode == 1) // config as a Master
+    {
+     pwm->TBCTL.bit.PHSEN      = TB_DISABLE;
+     pwm->TBCTL.bit.SYNCOSEL   = TB_CTR_ZERO; // sync "down-stream"
+    }
+    if(mode == 0) // config as a Slave (Note: Phase+2 value used to compensate for logic delay)
+    {
+     pwm->TBCTL.bit.PHSEN      = TB_ENABLE;
+     pwm->TBCTL.bit.SYNCOSEL   = TB_SYNC_IN;
+
+     if ((0 <= phase)&&(phase <= 2))
+         pwm->TBPHS.half.TBPHS = (2-phase);
+     else if (phase > 2)
+         pwm->TBPHS.half.TBPHS = (period-phase+2);
+    }
+    if(mode == 3) // config as a Slave,
+    {
+     pwm->TBCTL.bit.PHSEN      = TB_ENABLE;
+     pwm->TBCTL.bit.SYNCOSEL   = TB_SYNC_IN;
+    }
+
+    // Counter Compare Submodule Registers
+
+    pwm->CMPCTL.bit.SHDWAMODE = CC_SHADOW;
+    pwm->CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
+    pwm->CMPCTL.bit.SHDWBMODE = CC_SHADOW;
+    pwm->CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
+
+    pwm->CMPA.half.CMPA = pwm->TBPRD >> 2;              // set duty 0% initially
+    pwm->CMPB = pwm->TBPRD - pwm->CMPA.half.CMPA;
+
+    if(channel == 1) {
+        pwm->AQCTLA.bit.ZRO = AQ_SET;
+        pwm->AQCTLA.bit.CAU = AQ_CLEAR;
+
+        pwm->AQCTLB.bit.ZRO = AQ_SET;
+        pwm->AQCTLB.bit.CAU = AQ_CLEAR;
+
+        pwm->AQCTLB.bit.PRD = AQ_SET;
+        pwm->AQCTLB.bit.CBD = AQ_CLEAR;
+    } else {
+        pwm->AQCTLA.bit.PRD = AQ_SET;
+        pwm->AQCTLA.bit.CBD = AQ_CLEAR;
+
+        pwm->AQCTLB.bit.ZRO = AQ_SET;
+        pwm->AQCTLB.bit.CAU = AQ_CLEAR;
+
+        pwm->AQCTLB.bit.PRD = AQ_SET;
+        pwm->AQCTLB.bit.CBD = AQ_CLEAR;
+    }
+
+    EDIS;
+
+    return PWM_SUCCESS;
+}
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+EPwmRet PWM_2ChUpDownBoostSetDuty(struct EPWM_REGS* pwm, uint16_t duty) {
+    if(duty > pwm->TBPRD || duty > Boost_SW_Max_Duty)
+        return PWM_ERROR_DUTY;
+
+    pwm->CMPA.half.CMPA = duty;
+    pwm->CMPB = pwm->TBPRD - duty;
+    return PWM_SUCCESS;
 }
 
 /*****************************************************************************/
@@ -731,10 +923,12 @@ EPwmRet PWM_2ChCntUpSetDutyHalf(struct EPWM_REGS* pwm, uint16_t channel, uint16_
  *  @return Void.
  *  @note
  */
+
 #if 1
+
 EPwmRet PWM_2ChCntUpDownFullCfg(struct EPWM_REGS *pwm, uint32_t freq, int16_t mode, int16_t phase) {
 
-    uint16_t period = (FTBCLK / freq) - 1;
+    uint16_t period = (FTBCLK / freq);
 
     if(pwm == NULL)
         return PWM_ERROR_HANDLE;
@@ -743,147 +937,63 @@ EPwmRet PWM_2ChCntUpDownFullCfg(struct EPWM_REGS *pwm, uint32_t freq, int16_t mo
 
     EALLOW;
     // Time Base SubModule Registers
-    pwm->TBCTL.bit.CTRMODE          = TB_COUNT_UP;  // TB_COUNT_UPDOWN;
-    pwm->TBCTL.bit.PRDLD            = TB_IMMEDIATE;            //TB_SHADOW
-//    pwm->CMPCTL.bit.SHDWAMODE       = CC_SHADOW;
-//    pwm->CMPCTL.bit.LOADAMODE       = CC_CTR_PRD;
-//    pwm->CMPCTL.bit.SHDWBMODE       = CC_SHADOW;
-//    pwm->CMPCTL.bit.LOADBMODE       = CC_CTR_PRD;
-    pwm->TBCTL.bit.HSPCLKDIV        = TB_DIV1;
-    pwm->TBCTL.bit.CLKDIV           = TB_DIV1;
+    pwm->TBCTL.bit.PRDLD     = TB_IMMEDIATE;  // set Immediate load
+    pwm->TBPRD               = period >> 1;              // PWM frequency = 1 / period
+    pwm->TBPHS.half.TBPHS    = 0;
+    pwm->TBCTR               = 0;
 
-    pwm->TBPRD                      = period;                // PWM frequency = 1 / period
-    pwm->TBPHS.half.TBPHS           = 0;
-    pwm->TBCTR                      = 0;
+    pwm->TBCTL.bit.CTRMODE = TB_COUNT_UPDOWN;
+    pwm->TBCTL.bit.HSPCLKDIV = TB_DIV1;
+    pwm->TBCTL.bit.CLKDIV = TB_DIV1;
 
-    if(mode == 1) // config as a Master
-    {
-        pwm->TBCTL.bit.PHSEN        = TB_DISABLE;   // not set phase
-        pwm->TBCTL.bit.SYNCOSEL     = TB_CTR_ZERO;  // sync "down-stream"
-    }
+     if(mode == 1) // config as a Master
+     {
+         pwm->TBCTL.bit.PHSEN      = TB_DISABLE;
+         pwm->TBCTL.bit.SYNCOSEL   = TB_CTR_ZERO; // sync "down-stream"
+     }
+     if(mode == 0) // config as a Slave (Note: Phase+2 value used to compensate for logic delay)
+     {
+         pwm->TBCTL.bit.PHSEN      = TB_ENABLE;
+         pwm->TBCTL.bit.SYNCOSEL   = TB_SYNC_IN;
 
-    //
-    // config as a Slave (Note: Phase+2 value used to compensate
-    // for logic delay)
-    //
-    if(mode == 0)
-    {
-        pwm->TBCTL.bit.PHSEN = TB_ENABLE;
-        pwm->TBCTL.bit.SYNCOSEL = TB_SYNC_IN;
-        //pwm->TBPHS.half.TBPHS = (phase-2);
-        pwm->TBPHS.half.TBPHS = (phase);
-    }
+         if ((0 <= phase)&&(phase <= 2))
+             pwm->TBPHS.half.TBPHS = (2-phase);
+         else if (phase > 2)
+             pwm->TBPHS.half.TBPHS = (period-phase+2);
+     }
+     if(mode == 3) // config as a Slave,
+     {
+         pwm->TBCTL.bit.PHSEN      = TB_ENABLE;
+         pwm->TBCTL.bit.SYNCOSEL   = TB_SYNC_IN;
+     }
 
-    // Counter Compare Submodule Registers
-    pwm->CMPA.half.CMPA = 0;                 // set duty A 0% initially
-    pwm->CMPB = 0;                           // set duty B 0% initially
+     // Counter Compare Submodule Registers
+     pwm->CMPA.half.CMPA = 0;              // set duty 0% initially
+     pwm->CMPB = 0;
+     pwm->CMPCTL.bit.SHDWAMODE = CC_SHADOW;
+     pwm->CMPCTL.bit.LOADAMODE = CC_CTR_ZERO;
 
-    // Action Qualifier SubModule Registers
-    pwm->AQCTLA.bit.ZRO = AQ_SET;
-    pwm->AQCTLA.bit.CAU = AQ_CLEAR;
+     pwm->CMPB = 0;                        // set duty 0% initially
+     pwm->CMPCTL.bit.SHDWBMODE = CC_SHADOW;
+     pwm->CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
 
-    pwm->AQCTLB.bit.CAU = AQ_SET;
-    pwm->AQCTLB.bit.CBU = AQ_CLEAR;
+     pwm->AQCTLA.bit.CAU = AQ_CLEAR;
+     pwm->AQCTLA.bit.CAD = AQ_SET;
 
+     pwm->AQCTLB.bit.CBU = AQ_CLEAR;
+     pwm->AQCTLB.bit.CBD = AQ_SET;
 
-    /*
-     *  #define DBA_ALL               0x0   is the source for both falling-edge and rising-edge delay
-        #define DBB_RED_DBA_FED       0x1   for rising-edge B delayed -  for falling-edge A delayed
-        #define DBA_RED_DBB_FED       0x2   for falling-edge B delayed -  for rising-edge A delayed
-        #define DBB_ALL               0x3   is the source for both rising-edge and falling-edge delay
+     // Action Qualifier SubModule Registers
+     pwm->DBCTL.bit.OUT_MODE = DB_FULL_ENABLE; //Enable Dead-band module
+     pwm->DBCTL.bit.POLSEL  = DB_ACTV_HIC;  //Active Hi complementary
 
-     */
-
-    /*pwm->DBCTL.bit.OUT_MODE     = DB_FULL_ENABLE;
-    pwm->DBCTL.bit.POLSEL       = DB_ACTV_HIC;
-    //pwm->DBCTL.bit.IN_MODE      = DBB_ALL;
-    pwm->DBRED = 0;
-    pwm->DBFED = 10;*/
-
+     pwm->DBFED = 20;    //DeadBandFED;
+     pwm->DBRED = 20;    //DeadBandRED;
 
     EDIS;
 
     return PWM_SUCCESS;
 }
-
-#endif
-
-#if 0
-
-EPwmRet PWM_2ChCntUpDownFullCfg(struct EPWM_REGS *pwm, uint32_t freq, int16_t mode, int16_t phase) {
-
-    uint16_t period = (FTBCLK / freq) - 1;
-
-    if(pwm == NULL)
-        return PWM_ERROR_HANDLE;
-    if(phase > (int16_t)(period))
-        return PWM_ERROR_PHASE;
-
-    EALLOW;
-    // Time Base SubModule Registers
-    pwm->TBCTL.bit.CTRMODE          = TB_COUNT_UPDOWN;  // TB_COUNT_UPDOWN;
-    pwm->TBCTL.bit.PRDLD            = TB_IMMEDIATE;            //TB_SHADOW
-//    pwm->CMPCTL.bit.SHDWAMODE       = CC_SHADOW;
-//    pwm->CMPCTL.bit.LOADAMODE       = CC_CTR_PRD;
-    pwm->TBCTL.bit.HSPCLKDIV        = TB_DIV1;
-    pwm->TBCTL.bit.CLKDIV           = TB_DIV1;
-
-    pwm->TBPRD                      = 500;                // PWM frequency = 1 / period
-    pwm->TBPHS.half.TBPHS           = 0;
-    pwm->TBCTR                      = 0;
-
-    if(mode == 1) // config as a Master
-    {
-        pwm->TBCTL.bit.PHSEN        = TB_DISABLE;   // not set phase
-        pwm->TBCTL.bit.SYNCOSEL     = TB_CTR_ZERO;  // sync "down-stream"
-    }
-
-    //
-    // config as a Slave (Note: Phase+2 value used to compensate
-    // for logic delay)
-    //
-    if(mode == 0)
-    {
-        pwm->TBCTL.bit.PHSEN = TB_ENABLE;
-        pwm->TBCTL.bit.SYNCOSEL = TB_SYNC_IN;
-        if ((0 <= phase)&&(phase <= 2))
-            pwm->TBPHS.half.TBPHS = (2-phase);
-        else if (phase > 2)
-            pwm->TBPHS.half.TBPHS = (phase - 2);
-    }
-
-    // Counter Compare Submodule Registers
-    pwm->CMPA.half.CMPA = 200;                 // set duty A 0% initially
-    pwm->CMPB = 400;                           // set duty B 0% initially
-
-    // Action Qualifier SubModule Registers
-    pwm->AQCTLA.bit.CAU = AQ_SET;
-    pwm->AQCTLA.bit.CBU = AQ_CLEAR;
-
-    pwm->AQCTLB.bit.CBU = AQ_SET;
-    pwm->AQCTLB.bit.PRD = AQ_CLEAR;
-
-
-    /*
-     *  #define DBA_ALL               0x0   is the source for both falling-edge and rising-edge delay
-        #define DBB_RED_DBA_FED       0x1   for rising-edge B delayed -  for falling-edge A delayed
-        #define DBA_RED_DBB_FED       0x2   for falling-edge B delayed -  for rising-edge A delayed
-        #define DBB_ALL               0x3   is the source for both rising-edge and falling-edge delay
-
-     */
-
-    pwm->DBCTL.bit.OUT_MODE     = DBB_ENABLE;
-    pwm->DBCTL.bit.POLSEL       = DB_ACTV_HIC;
-    pwm->DBCTL.bit.IN_MODE      = DBA_ALL;
-    pwm->DBRED = 10;
-    pwm->DBFED = 10;
-
-
-    EDIS;
-
-    return PWM_SUCCESS;
-}
-#endif
 
 /*****************************************************************************/
 /** @brief set up duty and AQ for pwm A-B
@@ -899,44 +1009,44 @@ EPwmRet PWM_2ChCntUpDownFullCfg(struct EPWM_REGS *pwm, uint32_t freq, int16_t mo
  *  @return Void.
  *  @note
  */
-EPwmRet PWM_2ChCntUpSetDutyFull(struct EPWM_REGS* pwm, uint16_t channel, uint16_t duty, uint16_t updateAQ) {
-    uint16_t cmpEnd = duty * 2;
+EPwmRet PWM_2ChCntUpSetDutyFull(struct EPWM_REGS* pwm, uint16_t channel, uint16_t CMPA, uint16_t CMPB, uint16_t updateAQ) {
     if(pwm == NULL) {
         return PWM_ERROR_HANDLE;
     }
-    if(duty > pwm->TBPRD) {
+
+    if(CMPB > pwm->TBPRD) {
         return PWM_ERROR_DUTY;
     }
 
-
-    // active is PWMA, passive is PWMB
+    pwm->CMPB = CMPB;
+    pwm->CMPA.half.CMPA = CMPA;
     if(channel == 1) {
-        pwm->CMPA.half.CMPA = duty;
-        pwm->CMPB = (cmpEnd > pwm->TBPRD) ? pwm->TBPRD : cmpEnd;
         if(updateAQ > 0) {
             pwm->AQCTLA.all = 0;
-            pwm->AQCTLA.bit.ZRO = AQ_SET;
-            pwm->AQCTLA.bit.CAU = AQ_CLEAR;
+            pwm->AQCTLA.bit.CBU = AQ_SET;
+            pwm->AQCTLA.bit.CBD = AQ_CLEAR;
             pwm->AQCTLB.all = 0;
-            pwm->AQCTLB.bit.CAU = AQ_SET;
-            pwm->AQCTLB.bit.CBU = AQ_CLEAR;
+            pwm->AQCTLB.bit.CAD = AQ_SET;
+            pwm->AQCTLB.bit.CAU = AQ_CLEAR;
         }
     } else { // active is PWM B, passive is PWMA
-        pwm->CMPA.half.CMPA = duty;
-        pwm->CMPB = (cmpEnd > pwm->TBPRD) ? pwm->TBPRD : cmpEnd;
         if(updateAQ > 0) {
             pwm->AQCTLB.all = 0;
-            pwm->AQCTLB.bit.ZRO = AQ_SET;
-            pwm->AQCTLB.bit.CAU = AQ_CLEAR;
+            pwm->AQCTLB.bit.CBU = AQ_SET;
+            pwm->AQCTLB.bit.CBD = AQ_CLEAR;
             pwm->AQCTLA.all = 0;
-            pwm->AQCTLA.bit.CAU = AQ_SET;
-            pwm->AQCTLA.bit.CBU = AQ_CLEAR;
+            pwm->AQCTLA.bit.CAD = AQ_SET;
+            pwm->AQCTLA.bit.CAU = AQ_CLEAR;
 
         }
     }
 
     return PWM_SUCCESS;
 }
+
+#endif
+
+
 
 
 /*****************************************************************************/
@@ -993,7 +1103,7 @@ void ADC_SocConfig(int ChSel[], int Trigsel[],
     extern void DSP28x_usDelay(Uint32 Count);
 
     EALLOW;
-    AdcRegs.ADCCTL1.bit.ADCREFSEL   = 0;
+    AdcRegs.ADCCTL1.bit.ADCREFSEL   = 0;    // Select reference 0-internal;1-external
     AdcRegs.ADCCTL1.bit.ADCBGPWD    = 1;    // Power up band gap
     AdcRegs.ADCCTL1.bit.ADCREFPWD   = 1;    // Power up reference
     AdcRegs.ADCCTL1.bit.ADCPWDN     = 1;    // Power up rest of ADC
@@ -1099,6 +1209,34 @@ void ADC_SocConfig(int ChSel[], int Trigsel[],
  *  @return Void.
  *  @note
  */
+void UART_SendStr(char *msg) {
+    while(*msg) {
+        UART_Send(*msg);
+        msg++;
+    }
+}
+
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+void UART_SendNum(int num) {
+    uint8_t buf[7];
+    buf[0] = num / 10000 + 0x30;
+    buf[1] = ((num % 10000) / 1000) + 0x30;
+    buf[2] = ((num % 1000) / 100) + 0x30;
+    buf[3] = ((num % 100) / 10) + 0x30;
+    buf[4] = (num % 10) + 0x30;
+    buf[5] = ' ';
+    buf[6] = 0;
+    UART_SendStr((char*)buf);
+}
+
 
 
 

@@ -122,7 +122,8 @@ __interrupt void cpu_timer1_isr(void)
     CpuTimer1.InterruptCount++;
 
     if(sApp.sInverter.eState == INV_RUNNING) {
-        sinValue = Sin_GenValue(&sSine1Phase);
+
+        Sin_GenValue(&sApp.sInverter.sSine1Phase);
 
         #if Inverter_Switching_Type == Inverter_Type_Open_Half
         if(lastSinValue > 0 && sinValue <= 0) {
@@ -133,7 +134,8 @@ __interrupt void cpu_timer1_isr(void)
             PWM_2ChCntUpSetDutyHalf(sApp.sInverter.pwm2Handle, 1, 0);
         }
 
-        duty = _IQint(_IQabs(_IQmpy(sinValue, _IQ(sApp.sInverter.period))));
+        duty = _IQint(_IQabs(_IQmpy(sApp.sInverter.sSine1Phase.sinPwmA,
+                                    sApp.sInverter.periodIQ)));
 
         if(sinValue > 0) {
             PWM_2ChCntUpSetDutyHalf(sApp.sInverter.pwm1Handle, 1, duty);
@@ -143,29 +145,20 @@ __interrupt void cpu_timer1_isr(void)
             PWM_2ChCntUpSetDutyHalf(sApp.sInverter.pwm2Handle, 1, duty);
         }
 
+        lastSinValue = sinValue;
+
         #elif Inverter_Switching_Type == Inverter_Type_Open_Full
 
-        if(lastSinValue > 0 && sinValue <= 0) {
-            PWM_2ChCntUpSetDutyFull(sApp.sInverter.pwm1Handle, 1, 0, 1);
-            PWM_2ChCntUpSetDutyFull(sApp.sInverter.pwm2Handle, 2, 0, 1);
-        } else if(lastSinValue <= 0 && sinValue > 0){
-            PWM_2ChCntUpSetDutyFull(sApp.sInverter.pwm1Handle, 2, 0, 1);
-            PWM_2ChCntUpSetDutyFull(sApp.sInverter.pwm2Handle, 1, 0, 1);
-        }
-
-        duty = _IQint(_IQabs(_IQmpy(sinValue, _IQ(sApp.sInverter.period))));
-
-        if(sinValue > 0) {
-            PWM_2ChCntUpSetDutyFull(sApp.sInverter.pwm1Handle, 1, duty, 0);
-            PWM_2ChCntUpSetDutyFull(sApp.sInverter.pwm2Handle, 2, duty, 0);
-        } else {
-            PWM_2ChCntUpSetDutyFull(sApp.sInverter.pwm1Handle, 2, duty, 0);
-            PWM_2ChCntUpSetDutyFull(sApp.sInverter.pwm2Handle, 1, duty, 0);
-        }
+        sApp.sInverter.pwm1Handle->CMPA.half.CMPA =
+                _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmA,
+                         sApp.sInverter.pwm1Handle->TBPRD>>1);
+        sApp.sInverter.pwm2Handle->CMPA.half.CMPA =
+                _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmB,
+                         sApp.sInverter.pwm2Handle->TBPRD>>1);
 
         #endif
 
-        lastSinValue = sinValue;
+
     }
 
     //GPIO_TOGGLE_RUN();
@@ -182,6 +175,9 @@ __interrupt void cpu_timer1_isr(void)
 __interrupt void cpu_timer2_isr(void)
 {
     CpuTimer2.InterruptCount++;
+    if(sApp.eDevState == DS_RUN_UPS) {
+        Boost_Process(&sApp.sBooster, sApp.boostVolt.realValue);
+    }
 }
 
 /*****************************************************************************/
@@ -198,6 +194,7 @@ __interrupt void adc_isr(void)
 
     // Control all UPS behaviour
     App_Process(&sApp);
+
 
     // Clear ADCINT1 flag reinitialize for next SOC
     AdcRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;

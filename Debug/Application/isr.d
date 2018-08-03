@@ -39,8 +39,11 @@ Application/isr.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/
 Application/isr.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/Booster/booster.h
 Application/isr.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Hardware/libraries/math/IQmath/c28/include/IQMathlib.h
 Application/isr.obj: C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/limits.h
+Application/isr.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/PIDCtrl/pid.h
 Application/isr.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/Inverter/inverter.h
 Application/isr.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/SineGen.h
+Application/isr.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/console.h
+Application/isr.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/printf.h
 Application/isr.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/utils.h
 
 ../Application/isr.c: 
@@ -82,6 +85,9 @@ D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/app.h:
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/Booster/booster.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Hardware/libraries/math/IQmath/c28/include/IQMathlib.h: 
 C:/ti/ccsv7/tools/compiler/ti-cgt-c2000_16.9.6.LTS/include/limits.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/PIDCtrl/pid.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/Inverter/inverter.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/SineGen.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/console.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Console/printf.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/utils.h: 

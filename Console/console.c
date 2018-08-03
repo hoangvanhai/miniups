@@ -35,42 +35,11 @@ char shell_cmdline[SHELL_CMDLINE_SIZE];
 
 void Debug_Init(uint32_t uart_port_idx)
 {
-//	XMC_UART_CH_CONFIG_t uart_config =
-//	{
-//		.baudrate = DEBUG_BAUDRATE,
-//		.data_bits = 8,
-//		.stop_bits = 1,
-//	};
-//
-//	XMC_UART_CH_Init(UART[uart_port_idx], &uart_config);
-//	// set pin for RXD
-//	XMC_GPIO_SetMode(UART_RX_PORT[uart_port_idx], UART_RX_PIN[uart_port_idx],
-//			XMC_GPIO_MODE_INPUT_TRISTATE);
-//	// set pin for TXD
-//	XMC_GPIO_SetMode(UART_TX_PORT[uart_port_idx], UART_TX_PIN[uart_port_idx],
-//			XMC_GPIO_MODE_OUTPUT_PUSH_PULL | UART_TX_AF[uart_port_idx]);
-//	// set input source pin
-//	XMC_UART_CH_SetInputSource(UART[uart_port_idx],
-//			XMC_UART_CH_INPUT_RXD, UART_RX_INPUT[uart_port_idx]);
-//
-//	XMC_USIC_CH_EnableEvent(UART[uart_port_idx], XMC_USIC_CH_EVENT_STANDARD_RECEIVE);                                            // enable interrupt RI
-//	XMC_USIC_CH_SetInterruptNodePointer(UART[uart_port_idx],
-//			XMC_USIC_CH_INTERRUPT_NODE_POINTER_RECEIVE,
-//			UART_ISR_IDX[uart_port_idx]);             // set USIC0 SR5 for RI
-//	XMC_USIC_CH_EnableEvent(UART[uart_port_idx],
-//			XMC_USIC_CH_EVENT_ALTERNATIVE_RECEIVE);                                         // 'USIC_AI.007' -> AIR ON
-//	XMC_USIC_CH_SetInterruptNodePointer(UART[uart_port_idx],
-//			XMC_USIC_CH_INTERRUPT_NODE_POINTER_ALTERNATE_RECEIVE,
-//			UART_ISR_IDX[uart_port_idx]);
-//
-//	XMC_USIC_CH_EnableEvent(UART[uart_port_idx], XMC_USIC_CH_EVENT_TRANSMIT_SHIFT);
-//	XMC_USIC_CH_SetInterruptNodePointer(UART[uart_port_idx],
-//			XMC_USIC_CH_INTERRUPT_NODE_POINTER_TRANSMIT_SHIFT, UART_ISR_IDX[uart_port_idx]);
-//
-//	NVIC_SetPriority(UART_IRQn[uart_port_idx],2);   // CMSIS function for NVIC control: NVIC_SetPriority(IRQn_t IRQn, uint32_t priority): priority=0..63
-//	NVIC_EnableIRQ(UART_IRQn[uart_port_idx]);       // CMSIS function for NVIC control: enable IRQn
-//
-//	XMC_UART_CH_Start(UART[uart_port_idx]);
+    SciaRegs.SCICCR.all =0x0007;
+
+    //
+    // enable TX, RX, internal SCICLK, Disable RX ERR, SLEEP, TXWAKE
+    //
 
 	debug_port = uart_port_idx;
 

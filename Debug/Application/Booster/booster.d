@@ -37,6 +37,8 @@ Application/Booster/booster.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/
 Application/Booster/booster.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/BSP.h
 Application/Booster/booster.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/HardwareProfile.h
 Application/Booster/booster.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/AppConfig.h
+Application/Booster/booster.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/PIDCtrl/pid.h
+Application/Booster/booster.obj: D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/utils.h
 
 ../Application/Booster/booster.c: 
 ../Application/Booster/booster.h: 
@@ -75,3 +77,5 @@ D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Hardware/common/include/f2802x_de
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/BSP.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Bsp/HardwareProfile.h: 
 D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/AppConfig.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Application/PIDCtrl/pid.h: 
+D:/1.WORK/1.MiniUPS/software/workspace/MiniUPS/Lib/utils.h: 

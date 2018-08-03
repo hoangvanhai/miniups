@@ -14,6 +14,7 @@
 #include <inverter.h>
 #include <SineGen.h>
 #include <utils.h>
+#include <console.h>
 /************************** Constant Definitions *****************************/
 
 #define ADC_NUM_CHAN_MAX        16
@@ -22,8 +23,8 @@
 /**************************** Type Definitions *******************************/
 
 typedef enum EDeviceState_ {
-    DS_READY_RUN         = 0x0001,
-    DS_RUN_UPS           = 0x0002,
+    DS_RUN_UPS           = 0x0001,
+    DS_STATE_UPS         = 0x0002,
     DS_AC_AVAIL          = 0x0004,
     DS_BATT_VOLT_LOW     = 0x0008,
     DS_BATT_VOLT_HIGH    = 0x0010,
@@ -74,17 +75,34 @@ typedef struct SAdcValue_{
 typedef struct SApp_ {
     EDeviceState    eDevState;
     EDeviceSM       eDevSm;
+
     SBooster        sBooster;
     SInverter       sInverter;
+
     uint16_t        counterAdc;
     uint16_t        counterCtrl;
 
-    SAdcValue        battVolt;
-    SAdcValue        boostVolt;
-    SAdcValue        boostCurr;
-    SAdcValue        inverterCurr;
-    SAdcValue        lineDetectVolt;
-    SAdcValue        loadDetectVolt;
+    SAdcValue       battVolt;
+    _iq             lastBattVolt;
+    _iq             maxBattVolt;
+    _iq             minBattVolt;
+
+    SAdcValue       boostVolt;
+    _iq             maxBoostVolt;
+    _iq             minBoostVolt;
+    _iq             lastBoostVolt;
+
+    SAdcValue       boostCurr;
+    _iq             maxBoostCurr;
+
+    SAdcValue       inverterCurr;
+    _iq             maxInverterCurr;
+
+    SAdcValue       lineDetectVolt;
+    _iq             maxLineDetectVolt;
+
+    SAdcValue       loadDetectVolt;
+    _iq             maxLoadDetectVolt;
 
     void            *hTimer;
 }SApp;
@@ -106,7 +124,7 @@ typedef struct SApp_ {
                                             { \
                                                 adc.avgValue = (adc.totalValue / adc.maxCount) - adc.offset; \
                                                 adc.avgValue = MAX(0, adc.avgValue); \
-                                                adc.realValue = _IQmpy(_IQ(adc.avgValue), adc.coeff); \
+                                                adc.realValue = _IQ18mpy(_IQ18(adc.avgValue), adc.coeff); \
                                                 adc.count = 0; \
                                                 adc.totalValue = 0;\
                                             } \

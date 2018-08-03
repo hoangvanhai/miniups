@@ -15,6 +15,9 @@
 #include "F2802x_PieVect.h"
 /************************** Constant Definitions *****************************/
 
+#define LSPCLK_FREQ         FTBCLK/4
+#define SCI_BAUDRATE        115200
+#define SCI_PRD             (LSPCLK_FREQ/(SCI_BAUDRATE*8))  //-1
 
 /**************************** Type Definitions *******************************/
 
@@ -29,20 +32,15 @@ typedef enum {
     PWM_ERROR_HANDLE
 }EPwmRet;
 
-typedef enum {
-    LEV_LOW = 0,
-    LEV_HIGH = 1
-}EDigLev;
-
-
-
-
 
 /***************** Macros (Inline Functions) Definitions *********************/
 
 void BSP_Init(void);
 void BSP_Start(void);
 void UART_Init();
+void UART_Send(int ch);
+void UART_SendStr(char *msg);
+void UART_SendNum(int num);
 void PWM_Init();
 
 void PWM_Inverter_Init();
@@ -57,8 +55,15 @@ void TIMER_Cpu0_Init(uint32_t period);
 void TIMER_Cpu1_Init(uint32_t period);
 void TIMER_Cpu2_Init(uint32_t period);
 
+
 EPwmRet PWM_1ChCntUpCfg(struct EPWM_REGS* pwm, uint32_t freq, uint16_t dutyPercen,
                         int16_t mode, uint16_t phasePercen);
+
+EPwmRet PWM_2ChCntUpDownBoostCfg(struct EPWM_REGS* pwm, uint32_t freq,
+                                 int16_t mode, int16_t phase, int16_t channel);
+EPwmRet PWM_2ChSetDutyBoost(struct EPWM_REGS* pwm, uint16_t duty);
+EPwmRet PWM_2ChUpDownBoostSetDuty(struct EPWM_REGS* pwm, uint16_t duty);
+
 EPwmRet PWM_1ChCntUpSetDuty(struct EPWM_REGS* pwm, uint16_t duty);
 EPwmRet PWM_1ChCntUpSetPeriod(struct EPWM_REGS* pwm, uint16_t period);
 EPwmRet PWM_1ChCntUpSetPhase(struct EPWM_REGS* pwm, uint16_t phase);
@@ -68,7 +73,8 @@ EPwmRet PWM_2ChCntUpHalfCfg(struct EPWM_REGS *pwm, uint32_t freq, int16_t mode, 
 EPwmRet PWM_2ChCntUpSetDutyHalf(struct EPWM_REGS* pwm, uint16_t channel, uint16_t duty);
 
 EPwmRet PWM_2ChCntUpDownFullCfg(struct EPWM_REGS *pwm, uint32_t freq, int16_t mode, int16_t phase);
-EPwmRet PWM_2ChCntUpSetDutyFull(struct EPWM_REGS* pwm, uint16_t channel, uint16_t duty, uint16_t updateAQ);
+EPwmRet PWM_2ChCntUpSetDutyFull(struct EPWM_REGS* pwm, uint16_t channel,
+                                uint16_t CMPA, uint16_t CMPB, uint16_t updateAQ);
 
 void ADC_SocConfig(int ChSel[], int Trigsel[],
                    int ACQPS[], int IntChSel, int mode);

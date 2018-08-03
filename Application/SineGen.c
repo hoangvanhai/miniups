@@ -15,14 +15,12 @@
 /**************************** Type Definitions *******************************/
 
 /***************** Macros (Inline Functions) Definitions *********************/
-#define PI          _IQ(3.1415926535897932384626433832795)
-#define PI_TWO      _IQ(6.283185307179586)
-#define DEG         _IQ(0.0174532925199433)
+
 
 /************************** Function Prototypes ******************************/
 
 /************************** Variable Definitions *****************************/
-SSin1Phase sSine1Phase;
+
 /*****************************************************************************/
 /** @brief
  *
@@ -31,17 +29,54 @@ SSin1Phase sSine1Phase;
  *  @return Void.
  *  @note
  */
-_iq Sin_GenValue(SSin1Phase *pSin) {
-    pSin->angleD += pSin->stepD;
-    pSin->angleR = _IQmpy(pSin->angleD, DEG);
+void Sin_GenValue(SSin1Phase *pSin) {
 
-    if(pSin->angleR >= PI_TWO) {
-        pSin->angleD = 0;
-        pSin->angleR = 0;
+    pSin->angleA += pSin->angleRadUnit;
+
+    if(pSin->angleA >= pSin->angle360) {
+        pSin->angleA = 0;
     }
 
-    pSin->value = _IQmpy(_IQsin(pSin->angleR), pSin->gain);
+    pSin->angleB = pSin->angleA + pSin->angle120;
 
-    return pSin->value;
+    if(pSin->angleB >= pSin->angle360) {
+        pSin->angleB -= pSin->angle360;
+    }
+
+    pSin->angleC = pSin->angleA + pSin->angle240;
+
+    if(pSin->angleC >= pSin->angle360) {
+        pSin->angleC -= pSin->angle360;
+    }
+
+    pSin->sinPwmA = _IQsin(pSin->angleA);
+    pSin->sinPwmA = pSin->offset + _IQmpy(pSin->sinPwmA, pSin->gain);
+
+    pSin->sinPwmB = _IQsin(pSin->angleB);
+    pSin->sinPwmB = pSin->offset + _IQmpy(pSin->sinPwmB, pSin->gain);
+
+    pSin->sinPwmC = _IQsin(pSin->angleC);
+    pSin->sinPwmC = pSin->offset + _IQmpy(pSin->sinPwmC, pSin->gain);
 }
 
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+void Sin_Init(SSin1Phase *pSin, uint32_t freqSin,
+              uint32_t freqCarr, _iq stepRad, _iq gain, _iq offset) {
+    SINE1PHASE_RESET(pSin);
+    pSin->freqSin       = freqSin;
+    pSin->freqGenSin   = freqCarr;
+    pSin->gain          = gain;
+    pSin->offset        = offset;
+    pSin->angleRadUnit  = stepRad;
+    pSin->angle120      = _IQ(ANGLE_120);
+    pSin->angle240      = _IQ(ANGLE_240);
+    pSin->angle360      = _IQ(ANGLE_360);
+}
