@@ -71,10 +71,10 @@ typedef struct SBooster_ {
 #define Boost_SetState(pBst, state)     (pBst)->eState = state
 
 #define Boost_ApplyM(pBst) {\
-    if(PWM_1ChCntUpSetDuty((pBst)->pwmAHandle, (pBst)->dutyv) != PWM_SUCCESS) { \
+    if(PWM_2ChUpDownBoostSetDuty((pBst)->pwmAHandle, (pBst)->dutyv) != PWM_SUCCESS) { \
         return BR_FAIL; \
     } \
-    if(PWM_1ChCntUpSetDuty((pBst)->pwmBHandle, (pBst)->dutyv) != PWM_SUCCESS) { \
+    if(PWM_2ChUpDownBoostSetDuty((pBst)->pwmBHandle, (pBst)->dutyv) != PWM_SUCCESS) { \
         return BR_FAIL; \
     } \
 }

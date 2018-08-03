@@ -656,6 +656,7 @@ EPwmRet PWM_2ChCntUpDownBoostCfg(struct EPWM_REGS* pwm, uint32_t freq,
     return PWM_SUCCESS;
 }
 
+
 /*****************************************************************************/
 /** @brief
  *
