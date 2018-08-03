@@ -35,7 +35,6 @@ void Inv_Init(SInverter *pInv) {
     pInv->eState        = INV_IDLE;
     pInv->freq          = Inverter_Pwm_Freq;
     pInv->period        = (uint16_t)((FTBCLK / Inverter_Pwm_Freq));
-    pInv->periodIQ      = _IQ(pInv->period);
     pInv->dutyv         = 0;
     pInv->pwm1Handle    = (PWM_REGS *)&EPwm1Regs;
     pInv->pwm2Handle    = (PWM_REGS *)&EPwm2Regs;
@@ -45,11 +44,11 @@ void Inv_Init(SInverter *pInv) {
              Inverter_GenSin_Freq, _IQ(Inverter_Sin_Freq * 2 * PI / Inverter_GenSin_Freq),
              _IQ(Inverter_Start_Mf), _IQ(1.0));
 
-    pInv->gainStep              = _IQ18(Inverter_Step_Mf);         // set gain step is 0.01
-    pInv->gainMax               = _IQ(Inverter_Max_Mf);
+    pInv->gainStep       = _IQ18(Inverter_Step_Mf);         // set gain step is 0.01
+    pInv->gainMax        = _IQ(Inverter_Max_Mf);
 
-    pInv->aCoeff                = _IQ18(A_COEFF);
-    pInv->bCoeff                = _IQ18(B_COEFF);
+    pInv->aCoeff         = _IQ18(A_COEFF);
+    pInv->bCoeff         = _IQ18(B_COEFF);
 }
 
 /*****************************************************************************/
@@ -62,7 +61,7 @@ void Inv_Init(SInverter *pInv) {
  */
 void Inv_Start(SInverter *pInv) {
     SINE1PHASE_RESET(&pInv->sSine1Phase);
-    pInv->sSine1Phase.gain     = _IQ(Inverter_Start_Mf);
+    pInv->sSine1Phase.gain      = _IQ(Inverter_Start_Mf);
     pInv->eState                = INV_RUNNING;
 }
 

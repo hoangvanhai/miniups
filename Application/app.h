@@ -15,6 +15,7 @@
 #include <SineGen.h>
 #include <utils.h>
 #include <console.h>
+#include <MATH_EMAVG_IQ_C.h>
 /************************** Constant Definitions *****************************/
 
 #define ADC_NUM_CHAN_MAX        16
@@ -62,14 +63,15 @@ typedef enum EDeviceSM_ {
 }EDeviceSM;
 
 typedef struct SAdcValue_{
-    uint16_t count;
-    uint16_t maxCount;
-    uint32_t totalValue;
-    int16_t  avgValue;
-    uint16_t currValue;
-    uint16_t offset;
-    _iq      realValue;
-    _iq      coeff;
+    uint16_t        count;
+    uint16_t        maxCount;
+    uint32_t        totalValue;
+    int16_t         avgValue;
+    uint16_t        currValue;
+    uint16_t        offset;
+    _iq             realValue;
+    _iq             coeff;
+    SMATH_EMAVG_IQ_C sEMA;
 }SAdcValue;
 
 typedef struct SApp_ {
@@ -116,6 +118,7 @@ typedef struct SApp_ {
 #define App_SetDevState(pApp, state)    (pApp)->eDevState |= (state)
 #define App_ClearDevState(pApp, state)  (pApp)->eDevState &= ~(state)
 
+#if 0
 #define Adc_CalcValue(adc, value)          { \
                                             adc.count++; \
                                             adc.currValue = value;  \
@@ -129,6 +132,16 @@ typedef struct SApp_ {
                                                 adc.totalValue = 0;\
                                             } \
                                             }
+#endif
+
+#if 1
+#define Adc_CalcValue(adc, value)          { \
+                                            adc.sEMA.In = _IQ20(value); \
+                                            MATH_EMAVG_IQ_C(adc.sEMA); \
+                                            adc.realValue = _IQ18mpyIQX(adc.coeff, 18, adc.sEMA.Out, 20); \
+                                            }
+
+#endif
 
 #define Adc_InitValue(adc, coe, cnt, offs)          { \
                                             (adc).count = 0; \
@@ -139,6 +152,7 @@ typedef struct SApp_ {
                                             (adc).offset = offs; \
                                             (adc).realValue = 0; \
                                             (adc).coeff = coe; \
+                     MATH_EMAVG_IQ_C_INIT(adc.sEMA, _IQ30(2*PI* Adc_Noise_Cuttoff_Freq / Adc_Sampling_Freq)); \
                                             }
 
 /************************** Function Prototypes ******************************/

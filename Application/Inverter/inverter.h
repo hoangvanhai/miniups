@@ -44,7 +44,7 @@ typedef struct SInverter_ {
     uint32_t        freq;
     uint16_t        period;
     uint16_t        dutyv;          // duty value
-    _iq             periodIQ;
+    _iq             currFbFact;
     _iq             gainMax;
     _iq             gainStep;
     _iq             aCoeff;

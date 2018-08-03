@@ -85,7 +85,7 @@ typedef struct SBooster_ {
 }
 
 /************************** Function Prototypes ******************************/
-BRet Boost_Init(SBooster *pBst);
+BRet Boost_Init (SBooster *pBst);
 BRet Boost_Apply(SBooster *pBst);
 BRet Boost_Set(SBooster *pBst, _iq percen);
 BRet Boost_Stop(SBooster *pBst);

@@ -33,8 +33,7 @@ SApp sApp;
 int             ChSel[ADC_NUM_CHAN_MAX] =   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 int             TrigSel[ADC_NUM_CHAN_MAX] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 int             ACQPS[ADC_NUM_CHAN_MAX] =   {28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28};
-volatile
-uint8_t        buffer[15];
+long max  = -32767, min = 32767, tmp = 0;
 
 /*****************************************************************************/
 /** @brief
@@ -50,7 +49,7 @@ void App_Init(SApp *pApp) {
     // application timer
     Timer_Init();
     // init booster
-    //Boost_Init(&pApp->sBooster);
+    Boost_Init(&pApp->sBooster);
     // init inverter
     Inv_Init(&pApp->sInverter);
     // init app instance
@@ -75,6 +74,8 @@ void App_Init(SApp *pApp) {
                   _IQ18(1.0),   /* coefficient for calculate realvalue */
                   10,           /* average counter */
                   10);          /* offset value */
+
+
 
     Adc_InitValue(pApp->boostVolt,      _IQ18(Boost_Voltage_Adc_Coeff), 50, 10);
 
@@ -223,6 +224,30 @@ void App_Process(SApp *pApp) {
 #endif
 
 
+
+#if 0
+        long value;
+        value = _IQ18int(pApp->boostVolt.realValue); //AdcResult.ADCRESULT1;
+        if(max <  value)
+        {
+            max = value;
+        }
+        else if( min > value)
+        {
+            min = value;
+        }
+        tmp++;
+        if (tmp == 5000)
+        {
+            LREP("[Max %d - Min %d]\r\n", (long)max, (long)min);
+            tmp = 0;
+            max = -32767;
+            min = 32767;
+        }
+
+        return;
+#endif
+
 #if 1
     /*
      * CHECK CONDITION AND CONTROL
@@ -231,7 +256,6 @@ void App_Process(SApp *pApp) {
      * Check battery voltage
      * if volt < Batt_Under_Volt or volt > Batt_Over_Volt and booster is running -> stop Booster
      * if volt > Batt_Under_Volt + Batt_Hyst_Volt and booster is stopping -> start booster
-     * if
      */
     if(pApp->battVolt.realValue <= pApp->minBattVolt) { // under low volt
         // Set error low voltage
@@ -328,7 +352,7 @@ void App_Process(SApp *pApp) {
  *  @return Void.
  *  @note
  */
-int16 max  = -32767, min = 32767, tmp = 0;
+
 void App_Control(SApp *pApp) {
 
     switch (pApp->eDevSm) {
@@ -399,11 +423,14 @@ void App_Control(SApp *pApp) {
                               pApp->sInverter.aCoeff);
 //            _iq gain = _IQ(0.8);
 
+#if Build_Option == Build_Inverter_All || Build_Option == Build_Ups_All
+            gain += _IQmpy(pApp->sInverter.currFbFact, pApp->inverterCurr.realValue);
+#endif
             gain = MIN(gain, pApp->sInverter.gainMax);
             Inv_SetGain(&pApp->sInverter, gain);
             pApp->lastBoostVolt = pApp->boostVolt.realValue;
 
-            LREP("adc: %d\r\n", (long)_IQ18int(pApp->boostVolt.realValue));
+            //LREP("adc: %d\r\n", (long)_IQ18int(pApp->boostVolt.realValue));
 #if 0
         int16_t value;
         value = _IQ18int(pApp->boostVolt.realValue);

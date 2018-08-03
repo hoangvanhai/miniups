@@ -77,70 +77,16 @@ BRet Boost_Init(SBooster *pBst) {
  *  @note
  */
 BRet Boost_Apply(SBooster *pBst) {
-    if(PWM_1ChCntUpSetDuty(pBst->pwmAHandle, pBst->dutyv) != PWM_SUCCESS) {
+    if(PWM_2ChUpDownBoostSetDuty(pBst->pwmAHandle, pBst->dutyv) != PWM_SUCCESS) {
         return BR_FAIL;
     }
-    if(PWM_1ChCntUpSetDuty(pBst->pwmBHandle, pBst->dutyv) != PWM_SUCCESS) {
+    if(PWM_2ChUpDownBoostSetDuty(pBst->pwmBHandle, pBst->dutyv) != PWM_SUCCESS) {
         return BR_FAIL;
     }
     return BR_OK;
 }
 
 #define PWM_SETTING_USE_PWM_ALL
-//#define PWM_SETTING_GPIO_DRV_EN
-
-#ifdef PWM_SETTING_GPIO_DRV_EN
-/*****************************************************************************/
-/** @brief
- *
- *
- *  @param
- *  @return Void.
- *  @note
- */
-void PWM_Boost_Init(PWM_REGS *pwmA, PWM_REGS *pwmB, uint32_t freq, uint16_t phase) {
-
-    EALLOW;
-    GpioCtrlRegs.GPAPUD.bit.GPIO4 = 1;    // Disable pull-up on GPIO4 (EPWM3A)
-    GpioCtrlRegs.GPAMUX1.bit.GPIO4 = 1;   // Configure GPIO4 as EPWM3A
-
-    GpioCtrlRegs.GPAPUD.bit.GPIO6 = 1;    // Disable pull-up on GPIO6 (EPWM4A)
-    GpioCtrlRegs.GPAMUX1.bit.GPIO6 = 1;   // Configure GPIO6 as EPWM4A
-    EDIS;
-
-    EALLOW;
-    SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 0;
-    EDIS;
-
-    PWM_1ChCntUpCfg(pwmA, freq, 0, 0, 0);   // PWM1 Inverter is setting as master,
-                                            // all others must set as slave
-    PWM_1ChCntUpCfg(pwmB, freq, 0, 0, phase);
-
-    PWM_1ChCntUpSetEvent(pwmA, ET_CTR_ZERO, 0);
-    PWM_1ChCntUpSetEvent(pwmB, ET_CTR_ZERO, 0);
-
-    EALLOW;
-    SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;
-    EDIS;
-
-    GPIO_SET_LOW_DRV_EN1();
-    GPIO_SET_LOW_DRV_EN2();
-
-    EALLOW;
-    PieCtrlRegs.PIEIER3.bit.INTx3 = 1;
-    PieCtrlRegs.PIEIER3.bit.INTx4 = 1;
-
-    PieVectTable.EPWM3_INT = &epwm3_isr;
-    PieVectTable.EPWM4_INT = &epwm4_isr;
-
-    IER |= M_INT3;
-    EDIS;
-
-
-}
-
-#endif
-
 #ifdef PWM_SETTING_USE_PWM_ALL
 /*****************************************************************************/
 /** @brief
@@ -196,15 +142,12 @@ void PWM_Boost_Init(PWM_REGS *pwmA, PWM_REGS *pwmB, uint32_t freq, uint16_t phas
 BRet Boost_Stop(SBooster *pBst) {
     pBst->eState = BS_IDLE;
 
-    if(PWM_1ChCntUpSetDuty(pBst->pwmAHandle, 0) != PWM_SUCCESS) {
+    if(PWM_2ChUpDownBoostSetDuty(pBst->pwmAHandle, 0) != PWM_SUCCESS) {
         return BR_FAIL;
     }
-    if(PWM_1ChCntUpSetDuty(pBst->pwmBHandle, 0) != PWM_SUCCESS) {
+    if(PWM_2ChUpDownBoostSetDuty(pBst->pwmBHandle, 0) != PWM_SUCCESS) {
         return BR_FAIL;
     }
-
-    GPIO_SET_LOW_DRV_EN1();
-    GPIO_SET_LOW_DRV_EN2();
 
     return BR_OK;
 }

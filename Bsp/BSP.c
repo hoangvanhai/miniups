@@ -67,13 +67,11 @@ void BSP_Init(void) {
      * HW Timer
      */
     InitCpuTimers();
-    TIMER_Cpu0_Init(TIMER0_PERIOD);
+    TIMER_Cpu0_Init(Adc_Sampling_Period);  //TIMER0_PERIOD
 #ifndef TEST_INV_PWM_SETTING
     TIMER_Cpu1_Init(Inverter_GenSin_Period);
 #endif
     //TIMER_Cpu2_Init(TIMER2_PERIOD);
-
-    //Test_Pwm();
 
     ADC_Init();
 
@@ -455,26 +453,27 @@ void GPIO_Output_Init() {
     /*
      * DRV_EN1 - GPIO7
      */
-    GpioCtrlRegs.GPAMUX1.bit.GPIO7 = 0;     // 0=GPIO,  1=EPWM4B,  2=SCIRX-A,  3=Resv
-    GpioCtrlRegs.GPADIR.bit.GPIO7 = 1;      // 1=OUTput,  0=INput
-    GpioDataRegs.GPACLEAR.bit.GPIO7 = 1;    // uncomment if --> Set Low initially
+    // For now using PWM instead GPIO
+//    GpioCtrlRegs.GPAMUX1.bit.GPIO7 = 0;     // 0=GPIO,  1=EPWM4B,  2=SCIRX-A,  3=Resv
+//    GpioCtrlRegs.GPADIR.bit.GPIO7 = 1;      // 1=OUTput,  0=INput
+//    GpioDataRegs.GPACLEAR.bit.GPIO7 = 1;    // uncomment if --> Set Low initially
     //GpioDataRegs.GPASET.bit.GPIO7 = 1;      // uncomment if --> Set High initially
 
     /*
-     * DRV_EN2 - GPIO29
+     * DRV_EN2 - GPIO5
      */
-//    GpioCtrlRegs.GPAMUX2.bit.GPIO29 = 0;    // 0=GPIO,  1=SCITX-A,  2=I2C-SCL,  3=TZ3
-//    GpioCtrlRegs.GPADIR.bit.GPIO29 = 1;     // 1=OUTput,  0=INput
-//    GpioDataRegs.GPACLEAR.bit.GPIO29 = 1;   // uncomment if --> Set Low initially
-    //GpioDataRegs.GPASET.bit.GPIO29 = 1;     // uncomment if --> Set High initially
+//    GpioCtrlRegs.GPAMUX1.bit.GPIO5 = 0;     // 0=GPIO,  1=EPWM3B,  2=Resv,  3=ECAP1
+//    GpioCtrlRegs.GPADIR.bit.GPIO5 = 1;      // 1=OUTput,  0=INput
+//    GpioDataRegs.GPACLEAR.bit.GPIO5 = 1;    // uncomment if --> Set Low initially
+    //GpioDataRegs.GPASET.bit.GPIO5 = 1;      // uncomment if --> Set High initially
 
     /*
-     * FAN_ON - GPIO5
+     * FAN_ON - GPIO29
      */
-    GpioCtrlRegs.GPAMUX1.bit.GPIO5 = 0;     // 0=GPIO,  1=EPWM3B,  2=Resv,  3=ECAP1
-    GpioCtrlRegs.GPADIR.bit.GPIO5 = 1;      // 1=OUTput,  0=INput
-    GpioDataRegs.GPACLEAR.bit.GPIO5 = 1;    // uncomment if --> Set Low initially
-    //GpioDataRegs.GPASET.bit.GPIO5 = 1;      // uncomment if --> Set High initially
+    GpioCtrlRegs.GPAMUX2.bit.GPIO29 = 0;    // 0=GPIO,  1=SCITX-A,  2=I2C-SCL,  3=TZ3
+    GpioCtrlRegs.GPADIR.bit.GPIO29 = 1;     // 1=OUTput,  0=INput
+    GpioDataRegs.GPACLEAR.bit.GPIO29 = 1;   // uncomment if --> Set Low initially
+    //GpioDataRegs.GPASET.bit.GPIO29 = 1;     // uncomment if --> Set High initially
 
     /*
      * RUN - GPIO33
@@ -628,8 +627,8 @@ EPwmRet PWM_2ChCntUpDownBoostCfg(struct EPWM_REGS* pwm, uint32_t freq,
     pwm->CMPCTL.bit.SHDWBMODE = CC_SHADOW;
     pwm->CMPCTL.bit.LOADBMODE = CC_CTR_ZERO;
 
-    pwm->CMPA.half.CMPA = pwm->TBPRD >> 2;              // set duty 0% initially
-    pwm->CMPB = pwm->TBPRD - pwm->CMPA.half.CMPA;
+    pwm->CMPA.half.CMPA = 0;    //pwm->TBPRD >> 2;              // set duty 0% initially
+    pwm->CMPB = pwm->TBPRD;     // - pwm->CMPA.half.CMPA;
 
     if(channel == 1) {
         pwm->AQCTLA.bit.ZRO = AQ_SET;
@@ -674,156 +673,6 @@ EPwmRet PWM_2ChUpDownBoostSetDuty(struct EPWM_REGS* pwm, uint16_t duty) {
     return PWM_SUCCESS;
 }
 
-/*****************************************************************************/
-/** @brief
-    When the ePWM peripheral clock is enabled it may be possible that interrupt flags may be set due to
-    spurious events due to the ePWM registers not being properly initialized. The proper procedure for
-    initializing the ePWM peripheral is as follows:
-    1. Disable global interrupts (CPU INTM flag)
-    2. Disable ePWM interrupts
-    3. Set TBCLKSYNC=0
-    4. Initialize peripheral registers
-    5. Set TBCLKSYNC=1
-    6. Clear any spurious ePWM flags (including PIEIFR)
-    7. Enable ePWM interrupts
-    8. Enable global interrupts
- *  @param
- *  pwm: handle register
- *  freq: frequency of pwm channel
- *  dutyPercen: initialize duty cycle
- *  mode: master or slave
- *  phasePercen: how phase lock between master and slave
- *  @return Void.
- *  @note
- */
-EPwmRet PWM_1ChCntUpCfg(struct EPWM_REGS* pwm, uint32_t freq, uint16_t dutyPercen, int16_t mode, uint16_t phasePercen)
-{
-//    _iq calc_duty, calc_phase;
-    uint16_t period = (FTBCLK / freq) - 1;
-    uint16_t duty, phase;
-//
-//    calc_duty = _IQdiv(_IQmpy(_IQ(dutyPercen), _IQ(100)) , _IQ(period));
-//    calc_phase = _IQdiv(_IQmpy(_IQ(phasePercen), _IQ(100)) , _IQ(period));
-//
-//    duty = (uint16_t)calc_duty;
-//    phase = (uint16_t)calc_phase;
-
-    duty = dutyPercen;
-    phase = phasePercen;
-
-    if(pwm == NULL)
-        return PWM_ERROR_HANDLE;
-    if(duty > period)
-        return PWM_ERROR_DUTY;
-    if(phase > (period - duty))
-        return PWM_ERROR_PHASE;
-
-    EALLOW;
-    // Time Base SubModule Registers
-    pwm->TBCTL.bit.CTRMODE          = TB_COUNT_UP;
-    pwm->TBCTL.bit.PRDLD            = TB_IMMEDIATE;            //TB_SHADOW
-    //pwm->CMPCTL.bit.SHDWAMODE       = CC_SHADOW;
-    //pwm->CMPCTL.bit.LOADAMODE       = CC_CTR_PRD;
-    pwm->TBCTL.bit.HSPCLKDIV        = TB_DIV1;
-    pwm->TBCTL.bit.CLKDIV           = TB_DIV1;
-
-    pwm->TBPRD                      = period;                // PWM frequency = 1 / period
-    pwm->TBPHS.half.TBPHS           = 0;
-    pwm->TBCTR                      = 0;
-
-    if(mode == 1) // config as a Master
-    {
-        pwm->TBCTL.bit.PHSEN        = TB_DISABLE;   // not set phase
-        pwm->TBCTL.bit.SYNCOSEL     = TB_CTR_ZERO;  // sync "down-stream"
-    }
-
-    //
-    // config as a Slave (Note: Phase+2 value used to compensate
-    // for logic delay)
-    //
-    if(mode == 0)
-    {
-        pwm->TBCTL.bit.PHSEN = TB_ENABLE;
-        pwm->TBCTL.bit.SYNCOSEL = TB_SYNC_IN;
-        pwm->TBPHS.half.TBPHS = (phase-2);
-    }
-
-    // Counter Compare Submodule Registers
-    pwm->CMPA.half.CMPA = duty;                // set duty 0% initially
-
-    // Action Qualifier SubModule Registers
-    pwm->AQCTLA.bit.ZRO = AQ_SET;
-    pwm->AQCTLA.bit.CAU = AQ_CLEAR;
-
-    pwm->ETSEL.bit.INTEN = 1;    // Enable INT
-    pwm->ETPS.bit.INTPRD = ET_1ST;
-
-    EDIS;
-
-    return PWM_SUCCESS;
-}
-
-/*****************************************************************************/
-/** @brief
- *
- *
- *  @param
- *  @return Void.
- *  @note
- */
-EPwmRet PWM_1ChCntUpSetDuty(struct EPWM_REGS* pwm, uint16_t duty) {
-    if(pwm == NULL)
-        return PWM_ERROR_HANDLE;
-    if(duty > pwm->TBPRD || duty > Boost_SW_Max_Duty)
-        return PWM_ERROR_DUTY;
-
-    pwm->CMPA.half.CMPA = duty;
-    return PWM_SUCCESS;
-}
-/*****************************************************************************/
-/** @brief
- *
- *
- *  @param
- *  @return Void.
- *  @note
- */
-EPwmRet PWM_1ChCntUpSetPeriod(struct EPWM_REGS* pwm, uint16_t period) {
-    if(pwm == NULL)
-        return PWM_ERROR_HANDLE;
-    pwm->TBPRD = period;
-    return PWM_SUCCESS;
-}
-/*****************************************************************************/
-/** @brief
- *
- *
- *  @param
- *  @return Void.
- *  @note
- */
-EPwmRet PWM_1ChCntUpSetPhase(struct EPWM_REGS* pwm, uint16_t phase) {
-    if(pwm == NULL)
-        return PWM_ERROR_HANDLE;
-    pwm->TBPHS.half.TBPHS = (phase-2);
-    return PWM_SUCCESS;
-}
-
-/*****************************************************************************/
-/** @brief
- *
- *
- *  @param
- *  @return Void.
- *  @note
- */
-EPwmRet PWM_1ChCntUpSetEvent(struct EPWM_REGS* pwm, uint16_t event1, uint16_t event2) {
-    (void)event2;
-    EALLOW;
-    pwm->ETSEL.bit.INTSEL = event1;            // Select INT on Zero event
-    EDIS;
-    return PWM_SUCCESS;
-}
 
 /*****************************************************************************/
 /** @brief

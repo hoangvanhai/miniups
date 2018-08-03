@@ -103,8 +103,11 @@ __interrupt void epwm4_isr(void)
 __interrupt void cpu_timer0_isr(void)
 {
     CpuTimer0.InterruptCount++;
-    sSysTick.u32SystemTickCount++;
-    Timer_Update();
+    if(CpuTimer0.InterruptCount >= (APP_TIMER_PERIOD / Adc_Sampling_Period)) {
+        sSysTick.u32SystemTickCount++;
+        Timer_Update();
+        CpuTimer0.InterruptCount = 0;
+    }
     // Acknowledge this interrupt to receive more interrupts from group 1
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
@@ -195,38 +198,12 @@ __interrupt void adc_isr(void)
     // Control all UPS behaviour
     App_Process(&sApp);
 
-
     // Clear ADCINT1 flag reinitialize for next SOC
     AdcRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;
 
     // Acknowledge interrupt to PIE
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -56,18 +56,11 @@ void TIMER_Cpu1_Init(uint32_t period);
 void TIMER_Cpu2_Init(uint32_t period);
 
 
-EPwmRet PWM_1ChCntUpCfg(struct EPWM_REGS* pwm, uint32_t freq, uint16_t dutyPercen,
-                        int16_t mode, uint16_t phasePercen);
-
 EPwmRet PWM_2ChCntUpDownBoostCfg(struct EPWM_REGS* pwm, uint32_t freq,
                                  int16_t mode, int16_t phase, int16_t channel);
 EPwmRet PWM_2ChSetDutyBoost(struct EPWM_REGS* pwm, uint16_t duty);
 EPwmRet PWM_2ChUpDownBoostSetDuty(struct EPWM_REGS* pwm, uint16_t duty);
 
-EPwmRet PWM_1ChCntUpSetDuty(struct EPWM_REGS* pwm, uint16_t duty);
-EPwmRet PWM_1ChCntUpSetPeriod(struct EPWM_REGS* pwm, uint16_t period);
-EPwmRet PWM_1ChCntUpSetPhase(struct EPWM_REGS* pwm, uint16_t phase);
-EPwmRet PWM_1ChCntUpSetEvent(struct EPWM_REGS* pwm, uint16_t event1, uint16_t event2);
 
 EPwmRet PWM_2ChCntUpHalfCfg(struct EPWM_REGS *pwm, uint32_t freq, int16_t mode, int16_t phase);
 EPwmRet PWM_2ChCntUpSetDutyHalf(struct EPWM_REGS* pwm, uint16_t channel, uint16_t duty);
