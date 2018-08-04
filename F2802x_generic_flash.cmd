@@ -157,7 +157,7 @@ SECTIONS
    /* Allocate uninitalized data sections: */
    .stack              : >  RAMM1,             PAGE = 1
    .ebss               : >> RAMM1 | RAML0,     PAGE = 1
-   .esysmem            : >> RAMM1 | RAML0,     PAGE = 1
+   .esysmem            : > RAMM1 | RAML0,     PAGE = 1
 
    /* Initalized sections go in Flash */
    /* For SDFlash to program these, they must be allocated to page 0 */

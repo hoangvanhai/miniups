@@ -41,19 +41,6 @@ uint16_t duty;
 
 __interrupt void epwm3_isr(void)
 {
-    if(sApp.sBooster.eState == BS_RUNNING &&
-            EPwm3Regs.CMPA.half.CMPA > 0)
-    {
-        if(EPwm3Regs.ETSEL.bit.INTSEL == ET_CTR_ZERO) {
-            GPIO_SET_HIGH_DRV_EN2();
-            GPIO_SET_HIGH_DRV_EN1();
-            EPwm3Regs.ETSEL.bit.INTSEL = ET_CTRU_CMPA;
-        } else if(EPwm3Regs.ETSEL.bit.INTSEL == ET_CTRU_CMPA) {
-            GPIO_SET_LOW_DRV_EN2();
-            GPIO_SET_LOW_DRV_EN1();
-            EPwm3Regs.ETSEL.bit.INTSEL = ET_CTR_ZERO;
-        }
-    }
 
     EPwm3Regs.ETCLR.bit.INT = 1;
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
@@ -72,24 +59,43 @@ __interrupt void epwm3_isr(void)
 
 __interrupt void epwm4_isr(void)
 {
-    if(sApp.sBooster.eState == BS_RUNNING &&
-            EPwm4Regs.CMPA.half.CMPA > 0)
-    {
-        if(EPwm4Regs.ETSEL.bit.INTSEL == ET_CTR_ZERO) {
-            GPIO_SET_HIGH_DRV_EN2();
-            GPIO_SET_HIGH_DRV_EN1();
-            EPwm4Regs.ETSEL.bit.INTSEL = ET_CTRU_CMPA;
-        } else if(EPwm4Regs.ETSEL.bit.INTSEL == ET_CTRU_CMPA) {
-            GPIO_SET_LOW_DRV_EN2();
-            GPIO_SET_LOW_DRV_EN1();
-            EPwm4Regs.ETSEL.bit.INTSEL = ET_CTR_ZERO;
-        }
-    }
 
     EPwm4Regs.ETCLR.bit.INT = 1;
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
 }
 
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+
+__interrupt void epwm1_isr(void)
+{
+
+    EPwm1Regs.ETCLR.bit.INT = 1;
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
+}
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+
+__interrupt void epwm2_isr(void)
+{
+
+    EPwm2Regs.ETCLR.bit.INT = 1;
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
+}
 
 
 /*****************************************************************************/
@@ -152,12 +158,17 @@ __interrupt void cpu_timer1_isr(void)
 
         #elif Inverter_Switching_Type == Inverter_Type_Open_Full
 
+
+
+
+
         sApp.sInverter.pwm1Handle->CMPA.half.CMPA =
-                _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmA,
-                         sApp.sInverter.pwm1Handle->TBPRD>>1);
+                MIN(sApp.sInverter.pwm1Handle->TBPRD,
+                _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmA, sApp.sInverter.pwm1Handle->TBPRD>>1));
+
         sApp.sInverter.pwm2Handle->CMPA.half.CMPA =
-                _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmB,
-                         sApp.sInverter.pwm2Handle->TBPRD>>1);
+                MIN(sApp.sInverter.pwm2Handle->TBPRD,
+                    _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmB, sApp.sInverter.pwm2Handle->TBPRD>>1));
 
         #endif
 
@@ -208,7 +219,12 @@ __interrupt void adc_isr(void)
 
 
 
+__interrupt void epwm1_tzint_isr(void)
+{
 
+    LREP("Trip zone int event\r\n");
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP2;
+}
 
 
 

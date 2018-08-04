@@ -58,7 +58,6 @@ static long max  = -32767, min = 32767, tmp = 0;
 
 void main(void)
 {
-    uint8_t buff[50];
     // Hardware Init
     BSP_Init();
     // Application Init
@@ -76,11 +75,14 @@ void main(void)
 
     while(1) {
         DELAY_US(50000);
-        //App_Control(&sApp);
         //ServiceDog();
-        //LREP("adc: %d\r\n", (long)_IQ18int(_IQ18mpy(sApp.boostVolt.realValue, _IQ18(100))));
+//        LREP("adc: %d voltage: %d - gain: 0.%d\r\n", (long)AdcResult.ADCRESULT1, _IQ18int(sApp.boostVolt.realValue),
+//             _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)));
 
-#if 1
+//        LREP("voltage: %d - gain: 0.%d\r\n", _IQ18int(sApp.boostVolt.realValue),
+//                     _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)));
+
+#if 0
         int16_t value;
         value = _IQ18int(sApp.boostVolt.realValue);
         if(max <  value)

@@ -32,7 +32,7 @@ SApp sApp;
 
 int             ChSel[ADC_NUM_CHAN_MAX] =   {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 int             TrigSel[ADC_NUM_CHAN_MAX] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-int             ACQPS[ADC_NUM_CHAN_MAX] =   {28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28};
+int             ACQPS[ADC_NUM_CHAN_MAX] =   {6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6};
 long max  = -32767, min = 32767, tmp = 0;
 
 /*****************************************************************************/
@@ -77,7 +77,7 @@ void App_Init(SApp *pApp) {
 
 
 
-    Adc_InitValue(pApp->boostVolt,      _IQ18(Boost_Voltage_Adc_Coeff), 50, 10);
+    Adc_InitValue(pApp->boostVolt,      _IQ18(Boost_Voltage_Adc_Coeff), 50, 15);
 
     Adc_InitValue(pApp->boostCurr,      _IQ18(1.0),           10, 10);
 
@@ -421,7 +421,8 @@ void App_Control(SApp *pApp) {
 
             _iq gain = _IQdiv(pApp->sInverter.bCoeff - pApp->boostVolt.realValue,
                               pApp->sInverter.aCoeff);
-//            _iq gain = _IQ(0.8);
+
+            //_iq gain = _IQ(0.8);
 
 #if Build_Option == Build_Inverter_All || Build_Option == Build_Ups_All
             gain += _IQmpy(pApp->sInverter.currFbFact, pApp->inverterCurr.realValue);

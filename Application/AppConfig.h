@@ -65,7 +65,7 @@
 #endif
 
 ////////////////////// ADC_CONFIG CONFIG SECTION ///////////////////////////////////
-#define Adc_Sampling_Freq               (12500)
+#define Adc_Sampling_Freq               (12500)  //(12500)
 #define Adc_Sampling_Period             (TIMER_BASE / Adc_Sampling_Freq)
 #define Adc_Noise_Cuttoff_Freq          (5)
 
@@ -93,7 +93,7 @@
 #define Boost_Fault_Clear_Time          100  // ms. Dải từ 1-1000ms. Thời gian clear sự kiện quá dòng.
 #define Boost_Stage_Restart_Time        10   // Dải từ 0-100. Số lần clear bảo vệ quá dòng, hết số lần này khóa mạch luôn.
 
-#define Boost_Voltage_Adc_Coeff         (0.2142857142857143)  // convert ADC value to boost voltage
+#define Boost_Voltage_Adc_Coeff         (0.201680672268907) //(0.2142857142857143)  // convert ADC value to boost voltage
 #define Boost_Transform_Coeff           35
 #define Boost_Volt_Output               335
 
@@ -118,7 +118,7 @@
 
 #define Inverter_Sin_Freq               50   // Hz. Dải từ 45-400Hz. Tần số cơ bản điện áp đầu ra.
 
-#define Inverter_Pwm_Freq               25000   // kHz. Dải từ 5-100kHz. Tần số điều chế tính theo Khz
+#define Inverter_Pwm_Freq               50000   //25000   // kHz. Dải từ 5-100kHz. Tần số điều chế tính theo Khz
 #define Inverter_Pwm_Dead_Time          500  // ns. Dải từ 100-3000ns. Thời gian dead_time.
 
 #define Inverter_GenSin_Freq            12500   //25000
@@ -130,8 +130,8 @@
 #define Inverter_Max_Mf                 0.97    // Tỷ số điều biên cố định
 
 // Protect
-#define Inverter_Dcbus_Under            30  //300  // Vdc. Điện áp DC đầu vào bắt đầu cho chạy inverter.
-#define Inverter_Dcbus_Over             75  //350  // Vdc. Điện áp DC đầu vào ngắt inverter, không cho phép chạy lại.
+#define Inverter_Dcbus_Under            40  //300  // Vdc. Điện áp DC đầu vào bắt đầu cho chạy inverter.
+#define Inverter_Dcbus_Over             70  //350  // Vdc. Điện áp DC đầu vào ngắt inverter, không cho phép chạy lại.
 #define Inverter_Output_Current_Trip    2000 // mV, Điện áp tương ứng với dòng điện bảo vệ quá tải đo tại chân ADC.
 #define Inverter_Fault_Clear_Time       1000 // ms, thời gian clear bảo vệ quá tải.
 #define Inverter_Trip_Restart_Time      10   // Dải từ 0-100. Số lần clear bảo vệ quá tải, hết số lần này khóa mạch luôn.

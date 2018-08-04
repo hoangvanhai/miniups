@@ -136,9 +136,9 @@ typedef struct SApp_ {
 
 #if 1
 #define Adc_CalcValue(adc, value)          { \
-                                            adc.sEMA.In = _IQ20(value); \
+                                            adc.sEMA.In = _IQ20(value - adc.offset); \
                                             MATH_EMAVG_IQ_C(adc.sEMA); \
-                                            adc.realValue = _IQ18mpyIQX(adc.coeff, 18, adc.sEMA.Out, 20); \
+                                            adc.realValue = MAX(0, _IQ18mpyIQX(adc.coeff, 18, adc.sEMA.Out, 20)); \
                                             }
 
 #endif

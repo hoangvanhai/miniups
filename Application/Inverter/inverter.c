@@ -19,7 +19,7 @@
 
 
 /************************** Function Prototypes ******************************/
-
+extern __interrupt void epwm1_tzint_isr(void);
 /************************** Variable Definitions *****************************/
 
 /*****************************************************************************/
@@ -126,6 +126,17 @@ void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
 #elif Inverter_Switching_Type == Inverter_Type_Open_Full
     PWM_2ChCntUpDownFullCfg(pwm1, freq, 1, 0);
     PWM_2ChCntUpDownFullCfg(pwm2, freq, 0, 0);
+    PWM_ModuleConfigTripZone(pwm1);
+    PWM_ModuleConfigTripZone(pwm2);
+
+    COMP_ModuleConfig((struct COMP_REGS*)&Comp1Regs, 484); // fixed value for test
+    IER |= M_INT2;
+
+    // Enable EPWM INTn in the PIE: Group 2 interrupt 1-3
+    PieCtrlRegs.PIEIER2.bit.INTx1 = 1;
+    EALLOW;            // This is needed to write to EALLOW protected registers
+    PieVectTable.EPWM1_TZINT = &epwm1_tzint_isr;
+    EDIS;      // This is needed to disable write to EALLOW protected registers
 
 #ifdef TEST_INV_PWM_SETTING
     PWM_2ChCntUpSetDutyFull(pwm1, 1, 300, 1);

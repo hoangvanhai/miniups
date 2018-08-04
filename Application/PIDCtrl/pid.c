@@ -53,6 +53,7 @@ void PID_Init(SPID *pPid, _iq Kp, _iq Ki, _iq Kd, _iq T) {
     pre_pre_Error = pre_Error
     pre_Error = Error
     pre_Out = Out
+
  *
  *  @param
  *  @return Void.

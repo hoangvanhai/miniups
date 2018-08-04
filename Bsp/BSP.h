@@ -69,6 +69,9 @@ EPwmRet PWM_2ChCntUpDownFullCfg(struct EPWM_REGS *pwm, uint32_t freq, int16_t mo
 EPwmRet PWM_2ChCntUpSetDutyFull(struct EPWM_REGS* pwm, uint16_t channel,
                                 uint16_t CMPA, uint16_t CMPB, uint16_t updateAQ);
 
+EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm);
+void COMP_ModuleConfig(struct COMP_REGS* cmp, uint16_t value);
+
 void ADC_SocConfig(int ChSel[], int Trigsel[],
                    int ACQPS[], int IntChSel, int mode);
 
