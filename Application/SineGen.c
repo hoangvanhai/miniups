@@ -49,14 +49,14 @@ void Sin_GenValue(SSin1Phase *pSin) {
         pSin->angleC -= pSin->angle360;
     }
 
-    pSin->sinPwmA = _IQsin(pSin->angleA);
-    pSin->sinPwmA = pSin->offset + _IQmpy(pSin->sinPwmA, pSin->gain);
+    pSin->sinPwmA = _IQ24sin(pSin->angleA);
+    pSin->sinPwmA = pSin->offset + _IQ24mpy(pSin->sinPwmA, pSin->gain);
 
-    pSin->sinPwmB = _IQsin(pSin->angleB);
-    pSin->sinPwmB = pSin->offset + _IQmpy(pSin->sinPwmB, pSin->gain);
+    pSin->sinPwmB = _IQ24sin(pSin->angleB);
+    pSin->sinPwmB = pSin->offset + _IQ24mpy(pSin->sinPwmB, pSin->gain);
 
-    pSin->sinPwmC = _IQsin(pSin->angleC);
-    pSin->sinPwmC = pSin->offset + _IQmpy(pSin->sinPwmC, pSin->gain);
+    pSin->sinPwmC = _IQ24sin(pSin->angleC);
+    pSin->sinPwmC = pSin->offset + _IQ24mpy(pSin->sinPwmC, pSin->gain);
 }
 
 
@@ -76,7 +76,7 @@ void Sin_Init(SSin1Phase *pSin, uint32_t freqSin,
     pSin->gain          = gain;
     pSin->offset        = offset;
     pSin->angleRadUnit  = stepRad;
-    pSin->angle120      = _IQ(ANGLE_120);
-    pSin->angle240      = _IQ(ANGLE_240);
-    pSin->angle360      = _IQ(ANGLE_360);
+    pSin->angle120      = _IQ24(ANGLE_120);
+    pSin->angle240      = _IQ24(ANGLE_240);
+    pSin->angle360      = _IQ24(ANGLE_360);
 }

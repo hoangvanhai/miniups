@@ -79,7 +79,14 @@ void main(void)
 //        LREP("adc: %d voltage: %d - gain: 0.%d\r\n", (long)AdcResult.ADCRESULT1, _IQ18int(sApp.boostVolt.realValue),
 //             _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)));
 
-//        LREP("voltage: %d - gain: 0.%d\r\n", _IQ18int(sApp.boostVolt.realValue),
+        LREP("voltage: %d - gain: 0.%d\r\n", _IQ18int(_IQ18mpy(sApp.boostVolt.realValue, _IQ18(100))),
+                     _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)));
+
+//        LREP("adc1: %d adc2: %d adc3: %d adc4: %d\r\n",
+//             (long)AdcResult.ADCRESULT0, (long)AdcResult.ADCRESULT1,
+//             (long)AdcResult.ADCRESULT2, (long)AdcResult.ADCRESULT3);
+
+//        LREP("current: %d - gain: 0.%d\r\n", _IQ18int(sApp.inverterCurr.realValue),
 //                     _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)));
 
 #if 0

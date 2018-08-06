@@ -67,11 +67,11 @@ void BSP_Init(void) {
      * HW Timer
      */
     InitCpuTimers();
-    TIMER_Cpu0_Init(Adc_Sampling_Period);  //TIMER0_PERIOD
+    TIMER_Cpu0_Init(TIMER0_PERIOD);
 #ifndef TEST_INV_PWM_SETTING
-    TIMER_Cpu1_Init(Inverter_GenSin_Period);
+    TIMER_Cpu1_Init(TIMER_BASE / App_Control_Freq);
 #endif
-    //TIMER_Cpu2_Init(TIMER2_PERIOD);
+    TIMER_Cpu2_Init(TIMER2_PERIOD);
 
     ADC_Init();
 
@@ -1119,7 +1119,7 @@ void COMP_ModuleConfig(struct COMP_REGS* cmp, uint16_t value) {
     cmp->COMPCTL.bit.COMPSOURCE = 0;        // Connect the inverting input to internal DAC
     cmp->COMPCTL.bit.SYNCSEL    = 0;        //Asynchronous version of Comparator output is passed
     cmp->COMPCTL.bit.CMPINV     = 0;        //Output of comparator is passed
-    cmp->DACVAL.bit.DACVAL      = 484;      // Set DAC output - Input is Q15 - Convert to Q10
+    cmp->DACVAL.bit.DACVAL      = value;      // Set DAC output - Input is Q15 - Convert to Q10
                                             // V = DACVAL * (VDDA-VSSA)/1023
                                             // (VDDA = 3.3V, VSSA = 0 --> DACVAL = 1023*v/3.3 =
                                             // (1023*Rshunt*Gain/3.3)*I= (1023*0.02*19.53/3.3)*3 = 121*3 = 363

@@ -24,7 +24,7 @@
 
 typedef struct Sine1Phase_ {
     uint32_t        freqSin;          // freq of sin wave
-    uint32_t        freqGenSin;      // carier freq
+    uint32_t        freqGenSin;       // carier freq
     _iq             gain;             // gain of value
     _iq             offset;
     _iq             angleRadUnit;     // radian per degree
@@ -40,6 +40,27 @@ typedef struct Sine1Phase_ {
 }SSin1Phase;
 
 /***************** Macros (Inline Functions) Definitions *********************/
+
+#define Sin_GenValueM(pSin) { \
+    (pSin)->angleA += (pSin)->angleRadUnit; \
+    if((pSin)->angleA >= (pSin)->angle360) { \
+        (pSin)->angleA = 0; \
+    } \
+    (pSin)->angleB = (pSin)->angleA + (pSin)->angle120; \
+    if((pSin)->angleB >= (pSin)->angle360) { \
+        (pSin)->angleB -= (pSin)->angle360; \
+    } \
+    (pSin)->angleC = (pSin)->angleA + (pSin)->angle240; \
+    if((pSin)->angleC >= (pSin)->angle360) { \
+        (pSin)->angleC -= (pSin)->angle360; \
+    } \
+    (pSin)->sinPwmA = _IQ24sin((pSin)->angleA); \
+    (pSin)->sinPwmA = (pSin)->offset + _IQ24mpy((pSin)->sinPwmA, (pSin)->gain); \
+    (pSin)->sinPwmB = _IQ24sin((pSin)->angleB); \
+    (pSin)->sinPwmB = (pSin)->offset + _IQ24mpy((pSin)->sinPwmB, (pSin)->gain); \
+    (pSin)->sinPwmC = _IQ24sin((pSin)->angleC); \
+    (pSin)->sinPwmC = (pSin)->offset + _IQ24mpy((pSin)->sinPwmC, (pSin)->gain); \
+}
 
 
 #define SINE1PHASE_RESET(sin)  {        \

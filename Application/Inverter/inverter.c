@@ -39,14 +39,15 @@ void Inv_Init(SInverter *pInv) {
     pInv->pwm1Handle    = (PWM_REGS *)&EPwm1Regs;
     pInv->pwm2Handle    = (PWM_REGS *)&EPwm2Regs;
     PWM_Inv_Init(pInv->pwm1Handle, pInv->pwm2Handle, pInv->freq);
+    pInv->genSinRatio   = Inverter_GenSin_Freq_Ratio;
 
     Sin_Init(&pInv->sSine1Phase, Inverter_Sin_Freq,
-             Inverter_GenSin_Freq, _IQ(Inverter_Sin_Freq * 2 * PI / Inverter_GenSin_Freq),
-             _IQ(Inverter_Start_Mf), _IQ(1.0));
+             Inverter_Pwm_Freq,
+             _IQ24((Inverter_Sin_Freq * 2 * PI) / ((4 * Inverter_Pwm_Freq) / (5 * Inverter_GenSin_Freq_Ratio))),
+             _IQ24(Inverter_Start_Mf), _IQ24(1.0));
 
-    pInv->gainStep       = _IQ18(Inverter_Step_Mf);         // set gain step is 0.01
-    pInv->gainMax        = _IQ(Inverter_Max_Mf);
-
+    pInv->gainStep       = _IQ24(Inverter_Step_Mf);         // set gain step is 0.01
+    pInv->gainMax        = _IQ24(Inverter_Max_Mf);
     pInv->aCoeff         = _IQ18(A_COEFF);
     pInv->bCoeff         = _IQ18(B_COEFF);
 }
@@ -61,7 +62,7 @@ void Inv_Init(SInverter *pInv) {
  */
 void Inv_Start(SInverter *pInv) {
     SINE1PHASE_RESET(&pInv->sSine1Phase);
-    pInv->sSine1Phase.gain      = _IQ(Inverter_Start_Mf);
+    pInv->sSine1Phase.gain      = _IQ24(Inverter_Start_Mf);
     pInv->eState                = INV_RUNNING;
 }
 
@@ -129,7 +130,7 @@ void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
     PWM_ModuleConfigTripZone(pwm1);
     PWM_ModuleConfigTripZone(pwm2);
 
-    COMP_ModuleConfig((struct COMP_REGS*)&Comp1Regs, 484); // fixed value for test
+    COMP_ModuleConfig((struct COMP_REGS*)&Comp1Regs, 1000); // fixed value for test
     IER |= M_INT2;
 
     // Enable EPWM INTn in the PIE: Group 2 interrupt 1-3
@@ -174,9 +175,9 @@ void Inv_Set(SInverter *pInv, uint16_t chan, _iq percen) {
  *  @note
  */
 void Inv_SetGain(SInverter *pInv, _iq gain) {
-    if(_IQabs(gain) > _IQ(1.0))
+    if(_IQ24abs(gain) > _IQ24(1.0))
         return;
-    pInv->sSine1Phase.gain = _IQabs(gain);
+    pInv->sSine1Phase.gain = _IQ24abs(gain);
 }
 
 /*****************************************************************************/

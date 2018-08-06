@@ -41,6 +41,8 @@
 
 #define Build_Option                    Build_Inverter_Fix
 
+#define App_Control_Freq                100    // update cycle 1 ms
+
 // Định nghĩa tham số acquy.
 //Khi sử dụng trong chương trình chỉ chọn một trong các cấu hình này.
 
@@ -65,9 +67,7 @@
 #endif
 
 ////////////////////// ADC_CONFIG CONFIG SECTION ///////////////////////////////////
-#define Adc_Sampling_Freq               (12500)  //(12500)
-#define Adc_Sampling_Period             (TIMER_BASE / Adc_Sampling_Freq)
-#define Adc_Noise_Cuttoff_Freq          (5)
+#define Adc_Noise_Cuttoff_Freq          (5) // Hz
 
 
 ////////////////////// BOOST CONFIG SECTION ///////////////////////////////////
@@ -97,8 +97,6 @@
 #define Boost_Transform_Coeff           35
 #define Boost_Volt_Output               335
 
-
-
 ////////////////////// INVERTER CONFIG SECTION ///////////////////////////////////
 
 // Định nghĩa tham số tầng inverter.
@@ -116,26 +114,26 @@
 #define Inverter_Modulation_Used        Inverter_Modulation_SIN
 
 
-#define Inverter_Sin_Freq               50   // Hz. Dải từ 45-400Hz. Tần số cơ bản điện áp đầu ra.
+#define Inverter_Sin_Freq               50      // Hz. Dải từ 45-400Hz. Tần số cơ bản điện áp đầu ra.
 
-#define Inverter_Pwm_Freq               50000   //25000   // kHz. Dải từ 5-100kHz. Tần số điều chế tính theo Khz
-#define Inverter_Pwm_Dead_Time          500  // ns. Dải từ 100-3000ns. Thời gian dead_time.
+#define Inverter_Pwm_Freq               50000   //50000   //25000   // kHz. Dải từ 5-100kHz. Tần số điều chế tính theo Khz
+#define Inverter_Pwm_Dead_Time          500     // ns. Dải từ 100-3000ns. Thời gian dead_time.
 
-#define Inverter_GenSin_Freq            12500   //25000
-#define Inverter_GenSin_Period          (TIMER_BASE / Inverter_GenSin_Freq)    //
+#define Inverter_GenSin_Freq_Ratio      4       // use epwm1 freq as trigger adc/gen sin value
 
 // starting
-#define Inverter_Step_Mf                0.01    // for starting inverter
+#define Inverter_Soft_Start_Time        100  // ms. Thời gian khởi động mềm.
 #define Inverter_Start_Mf               0.2
 #define Inverter_Max_Mf                 0.97    // Tỷ số điều biên cố định
-
+#define Inverter_Step_Mf                0.005    //((Inverter_Max_Mf - Inverter_Start_Mf) / Inverter_Soft_Start_Time)
 // Protect
 #define Inverter_Dcbus_Under            40  //300  // Vdc. Điện áp DC đầu vào bắt đầu cho chạy inverter.
 #define Inverter_Dcbus_Over             70  //350  // Vdc. Điện áp DC đầu vào ngắt inverter, không cho phép chạy lại.
+
 #define Inverter_Output_Current_Trip    2000 // mV, Điện áp tương ứng với dòng điện bảo vệ quá tải đo tại chân ADC.
 #define Inverter_Fault_Clear_Time       1000 // ms, thời gian clear bảo vệ quá tải.
 #define Inverter_Trip_Restart_Time      10   // Dải từ 0-100. Số lần clear bảo vệ quá tải, hết số lần này khóa mạch luôn.
-#define Inverter_Soft_Start_Time        100  // ms. Thời gian khởi động mềm.
+
 
 
 // Định nghĩa tham số cho chức năng chuyển mạch điện lưới - inverter

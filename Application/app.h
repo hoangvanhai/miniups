@@ -63,6 +63,7 @@ typedef enum EDeviceSM_ {
 }EDeviceSM;
 
 typedef struct SAdcValue_{
+    uint8_t         type;
     uint16_t        count;
     uint16_t        maxCount;
     uint32_t        totalValue;
@@ -118,48 +119,45 @@ typedef struct SApp_ {
 #define App_SetDevState(pApp, state)    (pApp)->eDevState |= (state)
 #define App_ClearDevState(pApp, state)  (pApp)->eDevState &= ~(state)
 
-#if 0
+
 #define Adc_CalcValue(adc, value)          { \
-                                            adc.count++; \
-                                            adc.currValue = value;  \
-                                            adc.totalValue += value; \
-                                            if(adc.count >= adc.maxCount) \
-                                            { \
-                                                adc.avgValue = (adc.totalValue / adc.maxCount) - adc.offset; \
-                                                adc.avgValue = MAX(0, adc.avgValue); \
-                                                adc.realValue = _IQ18mpy(_IQ18(adc.avgValue), adc.coeff); \
-                                                adc.count = 0; \
-                                                adc.totalValue = 0;\
+                                            if(adc.type == 1) { \
+                                                adc.count++; \
+                                                adc.currValue = value;  \
+                                                adc.totalValue += value; \
+                                                if(adc.count >= adc.maxCount) \
+                                                { \
+                                                    adc.avgValue = (adc.totalValue / adc.maxCount) - adc.offset; \
+                                                    adc.avgValue = MAX(0, adc.avgValue); \
+                                                    adc.realValue = _IQ18mpyIQX(_IQ18(adc.avgValue), 18, adc.coeff, 24); \
+                                                    adc.count = 0; \
+                                                    adc.totalValue = 0;\
+                                                } \
+                                            } else { \
+                                                adc.sEMA.In = _IQ20(value - adc.offset); \
+                                                MATH_EMAVG_IQ_C(adc.sEMA); \
+                                                adc.realValue = MAX(0, _IQ18mpyIQX(adc.coeff, 24, adc.sEMA.Out, 20)); \
                                             } \
                                             }
-#endif
 
-#if 1
-#define Adc_CalcValue(adc, value)          { \
-                                            adc.sEMA.In = _IQ20(value - adc.offset); \
-                                            MATH_EMAVG_IQ_C(adc.sEMA); \
-                                            adc.realValue = MAX(0, _IQ18mpyIQX(adc.coeff, 18, adc.sEMA.Out, 20)); \
-                                            }
-
-#endif
-
-#define Adc_InitValue(adc, coe, cnt, offs)          { \
-                                            (adc).count = 0; \
-                                            (adc).currValue = 0; \
-                                            (adc).totalValue = 0; \
-                                            (adc).maxCount = cnt; \
-                                            (adc).avgValue = 0; \
-                                            (adc).offset = offs; \
-                                            (adc).realValue = 0; \
-                                            (adc).coeff = coe; \
-                     MATH_EMAVG_IQ_C_INIT(adc.sEMA, _IQ30(2*PI* Adc_Noise_Cuttoff_Freq / Adc_Sampling_Freq)); \
+#define Adc_InitValue(adc, typ, coe, cnt, offs, fc)          {      \
+                                            (adc).type = typ;       \
+                                            (adc).count = 0;        \
+                                            (adc).currValue = 0;    \
+                                            (adc).totalValue = 0;   \
+                                            (adc).maxCount = cnt;   \
+                                            (adc).avgValue = 0;     \
+                                            (adc).offset = offs;    \
+                                            (adc).realValue = 0;    \
+                                            (adc).coeff = coe;      \
+                     MATH_EMAVG_IQ_C_INIT(adc.sEMA, _IQ30(2*PI* (fc) / Inverter_Pwm_Freq)); \
                                             }
 
 /************************** Function Prototypes ******************************/
 void App_Init(SApp *pApp);
 void App_ScanDigitalInput(SApp *pApp);
 void App_ScanAnalogInput(SApp *pApp);
-void App_Process(SApp *pApp);
+void App_ProcessInput(SApp *pApp);
 void App_Control(SApp *pApp);
 
 /************************** Variable Definitions *****************************/

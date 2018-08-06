@@ -70,22 +70,50 @@ void App_Init(SApp *pApp) {
     Timer_SetRate(pApp->hTimer, Inverter_Fault_Clear_Time * 2);
 
     // init setting up
-    Adc_InitValue(pApp->battVolt,
-                  _IQ18(1.0),   /* coefficient for calculate realvalue */
-                  10,           /* average counter */
-                  10);          /* offset value */
+    Adc_InitValue(pApp->battVolt,                   /* adc node */
+                  0,                                /* type adc node */
+                  _IQ24(1.0),                       /* coefficient for calculate realvalue */
+                  10,                               /* average counter */
+                  10,                               /* offset value */
+                  Adc_Noise_Cuttoff_Freq);          /* cuttoff freq */
 
 
 
-    Adc_InitValue(pApp->boostVolt,      _IQ18(Boost_Voltage_Adc_Coeff), 50, 15);
+    Adc_InitValue(pApp->boostVolt,
+                  0,
+                  _IQ24(Boost_Voltage_Adc_Coeff),
+                  50,
+                  15,
+                  Adc_Noise_Cuttoff_Freq);
 
-    Adc_InitValue(pApp->boostCurr,      _IQ18(1.0),           10, 10);
 
-    Adc_InitValue(pApp->inverterCurr,   _IQ18(1.0),           10, 10);
+    Adc_InitValue(pApp->boostCurr,
+                  0,
+                  _IQ24(0.001),
+                  10,
+                  10,
+                  Adc_Noise_Cuttoff_Freq);
 
-    Adc_InitValue(pApp->lineDetectVolt, _IQ18(1.0),           10, 10);
+    Adc_InitValue(pApp->inverterCurr,
+                  0,
+                  _IQ24(0.001),
+                  10,
+                  10,
+                  Adc_Noise_Cuttoff_Freq);
 
-    Adc_InitValue(pApp->loadDetectVolt, _IQ18(1.0),           10, 10);
+    Adc_InitValue(pApp->lineDetectVolt,
+                  0,
+                  _IQ24(0.001),
+                  10,
+                  10,
+                  Adc_Noise_Cuttoff_Freq);
+
+    Adc_InitValue(pApp->loadDetectVolt,
+                  0,
+                  _IQ24(0.001),
+                  10,
+                  10,
+                  Adc_Noise_Cuttoff_Freq);
 
 
     pApp->maxBattVolt           = _IQ18(Batt_Over_Volt);
@@ -184,10 +212,8 @@ void App_ScanAnalogInput(SApp *pApp) {
  *  @return Void.
  *  @note
  */
-void App_Process(SApp *pApp) {
-
-
-
+void App_ProcessInput(SApp *pApp) {
+    static uint16_t counter = 0;
 #if Build_Option == Build_Boost_Only     // only boost
 
     Adc_CalcValue(sApp.battVolt,        AdcResult.ADCRESULT0);
@@ -199,7 +225,7 @@ void App_Process(SApp *pApp) {
 
 #elif Build_Option == Build_Inverter_Fix  // only inverter
     //Adc_CalcValue(sApp.battVolt,        AdcResult.ADCRESULT0);
-    Adc_CalcValue(sApp.boostVolt,       AdcResult.ADCRESULT1);
+    Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
     //Adc_CalcValue(sApp.inverterCurr,    AdcResult.ADCRESULT2);
     //Adc_CalcValue(sApp.boostCurr,       AdcResult.ADCRESULT3);
     //Adc_CalcValue(sApp.lineDetectVolt,  AdcResult.ADCRESULT4);
@@ -247,6 +273,69 @@ void App_Process(SApp *pApp) {
 
         return;
 #endif
+
+    /*
+     * Control duty cycle
+     */
+
+    if(pApp->sInverter.eState == INV_RUNNING) {
+        counter++;
+        if(counter >= pApp->sInverter.genSinRatio)
+        {
+            counter = 0;
+            Sin_GenValueM(&pApp->sInverter.sSine1Phase);
+
+            #if Inverter_Switching_Type == Inverter_Type_Open_Half
+            if(lastSinValue > 0 && sinValue <= 0) {
+                PWM_2ChCntUpSetDutyHalf(pApp->sInverter.pwm1Handle, 1, 0);
+                PWM_2ChCntUpSetDutyHalf(pApp->sInverter.pwm2Handle, 2, 0);
+            } else if(lastSinValue <= 0 && sinValue > 0){
+                PWM_2ChCntUpSetDutyHalf(pApp->sInverter.pwm1Handle, 2, 0);
+                PWM_2ChCntUpSetDutyHalf(pApp->sInverter.pwm2Handle, 1, 0);
+            }
+
+            duty = _IQint(_IQabs(_IQmpy(pApp->.sInverter.sSine1Phase.sinPwmA,
+                                        pApp->sInverter.periodIQ)));
+
+            if(sinValue > 0) {
+                PWM_2ChCntUpSetDutyHalf(pApp->sInverter.pwm1Handle, 1, duty);
+                PWM_2ChCntUpSetDutyHalf(pApp->sInverter.pwm2Handle, 2, duty);
+            } else {
+                PWM_2ChCntUpSetDutyHalf(pApp->sInverter.pwm1Handle, 2, duty);
+                PWM_2ChCntUpSetDutyHalf(pApp->sInverter.pwm2Handle, 1, duty);
+            }
+
+            lastSinValue = sinValue;
+
+            #elif Inverter_Switching_Type == Inverter_Type_Open_Full
+
+            pApp->sInverter.pwm1Handle->CMPA.half.CMPA =
+                    MIN(pApp->sInverter.pwm1Handle->TBPRD,
+                    _IQ24mpy(pApp->sInverter.sSine1Phase.sinPwmA,
+                             pApp->sInverter.pwm1Handle->TBPRD>>1));
+
+            pApp->sInverter.pwm2Handle->CMPA.half.CMPA =
+                    MIN(pApp->sInverter.pwm2Handle->TBPRD,
+                    _IQ24mpy(pApp->sInverter.sSine1Phase.sinPwmB,
+                             pApp->sInverter.pwm2Handle->TBPRD>>1));
+
+            #endif
+        }
+    }
+
+}
+
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+
+void App_Control(SApp *pApp) {
 
 #if 1
     /*
@@ -320,11 +409,11 @@ void App_Process(SApp *pApp) {
     /*
      * Check inverter current
      */
-    if(pApp->inverterCurr.realValue < pApp->maxInverterCurr) { // Normal current
-        App_ClearDevState(pApp, DS_ERR_INV_CURR);
-    } else { // Over current after Inverter
-        App_SetDevState(pApp, DS_ERR_INV_CURR);
-    }
+//    if(pApp->inverterCurr.realValue < pApp->maxInverterCurr) { // Normal current
+//        App_ClearDevState(pApp, DS_ERR_INV_CURR);
+//    } else { // Over current after Inverter
+//        App_SetDevState(pApp, DS_ERR_INV_CURR);
+//    }
 
     /*
      * Check Load out available
@@ -336,24 +425,6 @@ void App_Process(SApp *pApp) {
 //    }
 
 #endif
-
-    /*
-     * Wrappup, with all status of device, perform convenient actions
-     */
-    App_Control(pApp);
-}
-
-
-/*****************************************************************************/
-/** @brief
- *
- *
- *  @param
- *  @return Void.
- *  @note
- */
-
-void App_Control(SApp *pApp) {
 
     switch (pApp->eDevSm) {
     case DSM_STOP_UPS:
@@ -391,11 +462,18 @@ void App_Control(SApp *pApp) {
     case DSM_STARTING_INVERTER:
         if(pApp->eDevSm == DSM_STARTING_INVERTER) {
             // calculate gain on starting up inverter
-            _iq gain = _IQdiv(pApp->sInverter.bCoeff - pApp->boostVolt.realValue, pApp->sInverter.aCoeff);
+
+            _iq gain = _IQ24div(pApp->sInverter.bCoeff - pApp->boostVolt.realValue, pApp->sInverter.aCoeff);
+
             gain = MIN(gain, pApp->sInverter.gainMax);
-            if(Inv_GetGain(&pApp->sInverter) < _IQ(Inverter_Max_Mf) && Inv_GetGain(&pApp->sInverter) < gain) {
+
+            if(Inv_GetGain(&pApp->sInverter) < _IQ24(Inverter_Max_Mf) && Inv_GetGain(&pApp->sInverter) < gain) {
+
                 _iq currGain = Inv_GetGain(&pApp->sInverter) + Inv_GetGainStep(&pApp->sInverter);
+
                 Inv_SetGain(&pApp->sInverter, currGain);
+
+                //LREP("inc gain = %d\r\n", _IQ24int(_IQ24mpy(currGain, _IQ24(100))));
             } else {
                 pApp->eDevSm = DSM_RUNNING_UPS;
             }
@@ -430,28 +508,7 @@ void App_Control(SApp *pApp) {
             gain = MIN(gain, pApp->sInverter.gainMax);
             Inv_SetGain(&pApp->sInverter, gain);
             pApp->lastBoostVolt = pApp->boostVolt.realValue;
-
             //LREP("adc: %d\r\n", (long)_IQ18int(pApp->boostVolt.realValue));
-#if 0
-        int16_t value;
-        value = _IQ18int(pApp->boostVolt.realValue);
-        if(max <  value)
-        {
-            max = value;
-        }
-        else if( min > value)
-        {
-            min = value;
-        }
-        tmp++;
-        if (tmp == 100)
-        {
-            LREP("\r\n[Max %d - Min %d]", (long)max, (long)min);
-            tmp = 0;
-            max = -32767;
-            min = 32767;
-        }
-#endif
 
         }
 

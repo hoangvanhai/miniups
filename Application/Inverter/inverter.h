@@ -41,8 +41,9 @@ typedef struct SInverter_ {
     PWM_REGS        *pwm1Handle;
     PWM_REGS        *pwm2Handle;
     SSin1Phase      sSine1Phase;
-    uint32_t        freq;
-    uint16_t        period;
+    uint16_t        genSinRatio;
+    uint32_t        freq;           // pwm freq
+    uint16_t        period;         // pwm period
     uint16_t        dutyv;          // duty value
     _iq             currFbFact;
     _iq             gainMax;
