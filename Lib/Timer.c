@@ -3,13 +3,14 @@
 #include <stdlib.h>
 #include "Timer.h"
 #include <AppConfig.h>
+#include <F2802x_CpuTimers.h>
 
 /************************** Constant Definitions *****************************/
 
 #if		(APP_PLATFORM == APP_STAND_ALONE)
 
-	#define TIMER_ENTER_CRITICAL()    //DisableIntT1
-	#define TIMER_EXIT_CRITICAL()     //EnableIntT1
+	#define TIMER_ENTER_CRITICAL()    StopCpuTimer0()
+	#define TIMER_EXIT_CRITICAL()     StartCpuTimer0()
 	
 #elif 	(APP_PLATFORM	== APP_RTOS)
 

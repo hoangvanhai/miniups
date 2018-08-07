@@ -1022,13 +1022,13 @@ EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm) {
     pwm->DCACTL.bit.EVT1SRCSEL      = DC_EVT1;                 // DCAEVT1 = DCAEVT1 (not filtered)
     pwm->DCACTL.bit.EVT1FRCSYNCSEL  = DC_EVT_ASYNC;            // Take async path
 
-    pwm->TZCTL.bit.TZA              = TZ_FORCE_LO;               // EPWM1A will go high
+    pwm->TZCTL.bit.TZA              = TZ_FORCE_LO;             // EPWM1A will go high
     pwm->TZCTL.bit.TZB              = TZ_FORCE_LO;             // EPWM1B will go low
 
     pwm->TZSEL.bit.DCAEVT1          = 1;
 
     pwm->TZEINT.bit.DCAEVT1         = 1;
-    //pwm->TZEINT.bit.OST             = 1;
+    pwm->TZEINT.bit.OST             = 1;
 
     EDIS;
 

@@ -132,7 +132,7 @@ void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
 
     COMP_ModuleConfig((struct COMP_REGS*)&Comp1Regs,
                       _IQ18int(_IQ18(1023 * Inverter_SC_Protect_Value *
-                                     Adc_Inverter_Shunt_Volt_Rat / Adc_Reference_Volt)));
+                      Adc_Inverter_Shunt_Volt_Rat / Adc_Reference_Volt)));
 
     PWM_ModuleConfigTripZone(pwm1);
     PWM_ModuleConfigTripZone(pwm2);

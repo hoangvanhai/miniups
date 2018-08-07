@@ -50,6 +50,7 @@ void App_Init(SApp *pApp) {
     // init app instance
     pApp->counterAdc = 0;
     pApp->counterCtrl = 0;
+    pApp->numRAOCL = APP_NUM_RA_OVER_CURR;
     pApp->eDevState = DS_ERR_UNKNOWN;
 
     devStateInit = DS_RUN_UPS;
@@ -61,11 +62,11 @@ void App_Init(SApp *pApp) {
 
     pApp->eDevSm = DSM_STOP_UPS;
     // init timer for control time event
-    pApp->hTimer = Timer_Create(Clb_AppControl, pApp);
-    Timer_SetRate(pApp->hTimer, 2000);
+    pApp->hTimerControl = Timer_Create(Clb_AppControl, pApp);
+    Timer_SetRate(pApp->hTimerControl, 50000);
 
     pApp->hTimerProtect = Timer_Create(Clb_AppProtect, pApp);
-    Timer_SetRate(pApp->hTimerProtect, 5000);
+    Timer_SetRate(pApp->hTimerProtect, 50000);
 
 
 
@@ -181,8 +182,22 @@ static void Clb_AppControl(uint32_t tick, void *p_arg) {
     (void)p_arg;
     if(sApp.eDevState == DS_RUN_UPS) {
         sApp.eDevSm = DSM_STARTING_BOOSTER;
+        LREP("starting booster\r\n");
     }
-    Timer_Stop(sApp.hTimer);
+
+    if(sApp.eDevState & DS_INV_CURR_OVER_1) {
+        LREP("Clear over current 1\r\n");
+        App_ClearDevState(&sApp, DS_INV_CURR_OVER_1);
+        sApp.overCurrent1 = FALSE;
+    }
+
+    if(sApp.eDevState & DS_INV_CURR_OVER_2) {
+        LREP("Clear over current 2\r\n");
+        App_ClearDevState(&sApp, DS_INV_CURR_OVER_2);
+        sApp.overCurrent2 = FALSE;
+    }
+
+    Timer_Stop(sApp.hTimerControl);
 }
 
 /*****************************************************************************/
@@ -196,8 +211,24 @@ static void Clb_AppControl(uint32_t tick, void *p_arg) {
 static void Clb_AppProtect(uint32_t tick, void *p_arg) {
     (void)tick;
     (void)p_arg;
-    App_StopUps(&sApp);
+
+    if(sApp.eDevState & DS_INV_CURR_OVER_1) {
+        sApp.overCurrent1 = TRUE;
+    }
+    if(sApp.eDevState & DS_INV_CURR_OVER_2) {
+        sApp.overCurrent2 = TRUE;
+    }
+
+    sApp.numRAOCL--;
+    if(sApp.numRAOCL > 0) {
+        LREP("start restart timer\r\n");
+        Timer_Stop(sApp.hTimerControl);
+        Timer_StartAt(sApp.hTimerControl, APP_TIME_DA_OVER_CURR);
+    }
+
     Timer_Stop(sApp.hTimerProtect);
+
+    App_StopUps(&sApp);
 }
 
 /*****************************************************************************/
@@ -444,16 +475,21 @@ void App_Control(SApp *pApp) {
     // normal operate
     if(pApp->inverterCurr.realValue < pApp->maxInverterCurr) {
         // 1.normal operate
-        App_ClearDevState(pApp, DS_INV_CURR_OVER_1);
-        App_ClearDevState(pApp, DS_INV_CURR_OVER_2);
+        if(pApp->overCurrent1 == FALSE) {
+            App_ClearDevState(pApp, DS_INV_CURR_OVER_1);
+        }
+        if(pApp->overCurrent2 == FALSE) {
+            App_ClearDevState(pApp, DS_INV_CURR_OVER_2);
+        }
         if(Timer_IsRunning(pApp->hTimerProtect)) {
+            LREP("Stop protect\r\n");
             Timer_Stop(pApp->hTimerProtect);
         }
     } else if(pApp->inverterCurr.realValue >= pApp->maxInverterCurr &&
             (pApp->inverterCurr.realValue < pApp->maxInverterCurr +
             _IQ18(Inverter_Current_Offset))) {
         // 2. keep prev state
-
+            LREP("Unstable current\r\n");
     } else if((pApp->inverterCurr.realValue >= pApp->maxInverterCurr +
             _IQ18(Inverter_Current_Offset)) &&
             pApp->inverterCurr.realValue < pApp->maxInverterCurr2) {
@@ -461,6 +497,7 @@ void App_Control(SApp *pApp) {
         if(pApp->eDevState != (DS_RUN_UPS | DS_INV_CURR_OVER_1)) {
             App_SetDevState(pApp, DS_INV_CURR_OVER_1);
             App_ClearDevState(pApp, DS_INV_CURR_OVER_2);
+            LREP("start protect OCL timer on zone 3\r\n");
             Timer_StartAt(pApp->hTimerProtect, Inverter_OCL_Wait_Time);
         }
 
@@ -472,6 +509,7 @@ void App_Control(SApp *pApp) {
             App_SetDevState(pApp, DS_INV_CURR_OVER_1);
             App_ClearDevState(pApp, DS_INV_CURR_OVER_2);
             Timer_StartAt(pApp->hTimerProtect, Inverter_OCL_Wait_Time);
+            LREP("start protect OCL timer on zone 4\r\n");
         } else { // else keep prev state
 
         }
@@ -483,6 +521,7 @@ void App_Control(SApp *pApp) {
             App_ClearDevState(pApp, DS_INV_CURR_OVER_1);
             App_SetDevState(pApp, DS_INV_CURR_OVER_2);
             Timer_StartAt(pApp->hTimerProtect, Inverter_OCS_Wait_Time);
+            LREP("start protect OCS timer \r\n");
         }
 
     }
@@ -501,14 +540,15 @@ void App_Control(SApp *pApp) {
     case DSM_STOP_UPS:
         // if not yet kick start UPS event
         if(pApp->eDevState == DS_RUN_UPS) {
-            if(!Timer_IsRunning(pApp->hTimer)) {
+            if(!Timer_IsRunning(pApp->hTimerControl)) {
                 // kick start
-                Timer_StartAt(pApp->hTimer, Inverter_Soft_Start_Time);
+                Timer_StartAt(pApp->hTimerControl, Inverter_Soft_Start_Time);
                 LREP("Soft start inverter\r\n");
             }
         } else { // while waitting starting time, error event occours
-            if(Timer_IsRunning(pApp->hTimer))
-                Timer_Stop(pApp->hTimer);
+            if(Timer_IsRunning(pApp->hTimerControl) &&
+                    !pApp->overCurrent1 && !pApp->overCurrent2)
+                Timer_Stop(pApp->hTimerControl);
         }
         break;
     case DSM_STARTING_BOOSTER:
@@ -525,9 +565,10 @@ void App_Control(SApp *pApp) {
         }
         break;
     case DSM_STARTING_INVERTER:
-        if(pApp->eDevState == DS_RUN_UPS) {
+        if(pApp->eDevState == DS_RUN_UPS                        ||
+           pApp->eDevState == (DS_RUN_UPS | DS_INV_CURR_OVER_1) ||
+           pApp->eDevState == (DS_RUN_UPS | DS_INV_CURR_OVER_2)) {
             // calculate gain on starting up inverter
-
             _iq gain = _IQ24div(pApp->sInverter.bCoeff - pApp->boostVolt.realValue, pApp->sInverter.aCoeff);
 
             gain = MIN(gain, pApp->sInverter.gainMax);

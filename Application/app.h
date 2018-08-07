@@ -113,7 +113,9 @@ typedef struct SApp_ {
     BOOL            overCurrent1;
     BOOL            overCurrent2;
 
-    void            *hTimer;
+    int16_t         numRAOCL;       // times restart after overcurrent
+
+    void            *hTimerControl;
     void            *hTimerProtect;
 }SApp;
 
@@ -143,7 +145,7 @@ typedef struct SApp_ {
                                             } else { \
                                                 adc.sEMA.In = _IQ20(value - adc.offset); \
                                                 MATH_EMAVG_IQ_C(adc.sEMA); \
-                                                adc.realValue = MAX(0, _IQ18mpyIQX(adc.coeff, 24, adc.sEMA.Out, 20)); \
+                                                adc.realValue = _IQ18mpyIQX(adc.coeff, 24, adc.sEMA.Out, 20); \
                                             } \
                                             }
 
@@ -173,6 +175,7 @@ typedef struct SApp_ {
                                     GPIO_SET_LOW_DISP_UPS_RUN(); \
                                     GPIO_SET_LOW_CTRL_RELAY();  \
                                     (pApp)->eDevSm = DSM_STOP_UPS; \
+                                    ASSERT(0); \
                                     }
 
 /************************** Function Prototypes ******************************/

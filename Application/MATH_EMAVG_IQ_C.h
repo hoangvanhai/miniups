@@ -26,8 +26,9 @@ typedef struct {
  * @param m - MATH_EMAVG_IQ_C structure with values.
  * @return MATH_EMAVG_IQ_C Out parameter.
  */
-#define MATH_EMAVG_IQ_C(v)									\
-v.Out = (_IQ20mpyIQX((v.In - v.Out) , 20, v.Multiplier, 30) + v.Out)
+#define MATH_EMAVG_IQ_C(v)  {   \
+                                v.Out = (_IQ20mpyIQX((v.In - v.Out) , 20, v.Multiplier, 30) + v.Out); \
+                            }
 
 /**
  * Initial values for MATH_EMAVG_IQ_C structure.

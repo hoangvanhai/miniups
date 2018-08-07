@@ -32,6 +32,9 @@
 
 #define APP_TIMER_PERIOD                1000
 
+#define APP_NUM_RA_OVER_CURR            3
+#define APP_TIME_DA_OVER_CURR           3000        // ms
+
 // Định nghĩa tham số để build chương trình.
 #define Build_Boost_Only                1     // Chỉ cho chạy tầng boost
 #define Build_Inverter_Fix              2     // Chỉ cho chạy tầng inverter, hệ số điều biên cố định
@@ -98,7 +101,7 @@
 #define Boost_Fault_Clear_Time          100  // ms. Dải từ 1-1000ms. Thời gian clear sự kiện quá dòng.
 #define Boost_Stage_Restart_Time        10   // Dải từ 0-100. Số lần clear bảo vệ quá dòng, hết số lần này khóa mạch luôn.
 
-#define Boost_Voltage_Adc_Coeff         (0.201680672268907) //(0.2142857142857143)  // convert ADC value to boost voltage
+#define Boost_Voltage_Adc_Coeff         (0.2086351782092141)   //(0.2122954444935863)    //(0.201680672268907) //(0.2142857142857143)  // convert ADC value to boost voltage
 #define Boost_Transform_Coeff           35
 #define Boost_Volt_Output               335
 
@@ -130,18 +133,18 @@
 #define Inverter_Soft_Start_Time        100  // ms. Thời gian khởi động mềm.
 #define Inverter_Start_Mf               0.2
 #define Inverter_Max_Mf                 0.97    // Tỷ số điều biên cố định
-#define Inverter_Step_Mf                0.005    //((Inverter_Max_Mf - Inverter_Start_Mf) / Inverter_Soft_Start_Time)
+#define Inverter_Step_Mf                0.1   //((Inverter_Max_Mf - Inverter_Start_Mf) / Inverter_Soft_Start_Time)
 // Protect
-#define Inverter_Dcbus_Under            40  //300  // Vdc. Điện áp DC đầu vào bắt đầu cho chạy inverter.
-#define Inverter_Dcbus_Over             70  //350  // Vdc. Điện áp DC đầu vào ngắt inverter, không cho phép chạy lại.
+#define Inverter_Dcbus_Under            40      //300  // Vdc. Điện áp DC đầu vào bắt đầu cho chạy inverter.
+#define Inverter_Dcbus_Over             70      //350  // Vdc. Điện áp DC đầu vào ngắt inverter, không cho phép chạy lại.
 
-#define Inverter_OCL_Cur_Value          (2.000) // A, Điện áp tương ứng với dòng điện bảo vệ quá tải đo tại chân ADC.
-#define Inverter_OCL_Wait_Time          1000 // ms, thời gian clear bảo vệ quá tải.
-#define Inverter_OCS_Cur_Value          (3.000) // A, dòng khởi động cho phép trong khoảng thời gian khởi động
-#define Inverter_OCS_Wait_Time          100  // ms, thời gian khởi động tải
-#define Inverter_Trip_Restart_Num       10   // Dải từ 0-100. Số lần clear bảo vệ quá tải, hết số lần này khóa mạch luôn.
-#define Inverter_Current_Offset         (0.1)   //
-#define Inverter_SC_Protect_Value       (0.88)  // short current max value = (Adc_Reference_Volt / Adc_Inverter_Shunt_Volt_Rat)
+#define Inverter_OCL_Cur_Value          (0.15)   // A, Điện áp tương ứng với dòng điện bảo vệ quá tải đo tại chân ADC.
+#define Inverter_OCL_Wait_Time          (5000)  // ms, thời gian clear bảo vệ quá tải.
+#define Inverter_OCS_Cur_Value          (0.25)   // A, dòng khởi động cho phép trong khoảng thời gian khởi động
+#define Inverter_OCS_Wait_Time          (100)   // ms, thời gian khởi động tải
+#define Inverter_Trip_Restart_Num       (10)    // Dải từ 0-100. Số lần clear bảo vệ quá tải, hết số lần này khóa mạch luôn.
+#define Inverter_Current_Offset         (0.05)   //
+#define Inverter_SC_Protect_Value       (0.5)   //(0.88)  // short current max value = (Adc_Reference_Volt / Adc_Inverter_Shunt_Volt_Rat)
 
 
 #define Inverter_Feedback_Curr_Rat      (0.25)

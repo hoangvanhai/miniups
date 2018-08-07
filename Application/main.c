@@ -86,8 +86,11 @@ void main(void)
 //             (long)AdcResult.ADCRESULT0, (long)AdcResult.ADCRESULT1,
 //             (long)AdcResult.ADCRESULT2, (long)AdcResult.ADCRESULT3);
 
-        LREP("C: %d - V: %d - G: 0.%d STAT: 0x%x\r\n",
-             _IQ18int(_IQ18mpy(sApp.inverterCurr.realValue, _IQ18(100))),
+//        LREP("ADC: %d - V: %d\r\n", (long)AdcResult.ADCRESULT1,
+//             _IQ18int(sApp.boostVolt.realValue));
+
+        LREP("C: 0.%d - V: %d - G: 0.%d STAT: 0x%x\r\n",
+             _IQ18int(_IQ18mpy(sApp.inverterCurr.realValue, _IQ18(10))),
              _IQ18int(sApp.boostVolt.realValue),
              _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)),
              (long)sApp.eDevState);

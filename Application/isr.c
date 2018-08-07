@@ -106,14 +106,15 @@ __interrupt void epwm4_isr(void)
 __interrupt void epwm1_tzint_isr(void)
 {
 
-    LREP("Trip zone int event\r\n");
+    LREP("Trip Zone\r\n");
     EALLOW;
-    EPwm1Regs.TZCLR.bit.INT = 1;
-    //EPwm1Regs.TZCLR.bit.OST = 1;
-    EPwm1Regs.TZCLR.bit.DCAEVT1 = 1;
+    EPwm1Regs.TZCLR.bit.INT     = 1;
+//    EPwm1Regs.TZCLR.bit.OST     = 1;
+//    EPwm1Regs.TZCLR.bit.DCAEVT1 = 1;
+//    EPwm1Regs.TZFRC.bit.CBC     = 1;
     EDIS;
 
-    App_StopUps(&sApp);
+    //App_StopUps(&sApp);
 
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP2;
 }
@@ -179,8 +180,6 @@ __interrupt void cpu_timer2_isr(void)
  */
 __interrupt void adc_isr(void)
 {
-    //GPIO_TOGGLE_RUN();
-
     // Control all UPS behaviour
     App_ProcessInput(&sApp);
 
