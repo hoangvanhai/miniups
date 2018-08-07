@@ -32,8 +32,9 @@ typedef enum EDeviceState_ {
     DS_BOOST_VOLT_LOW    = 0x0020,
     DS_BOOST_VOLT_HIGH   = 0x0040,
     DS_ERR_BOOST_CURR    = 0x0080,
-    DS_ERR_INV_CURR      = 0x0100,
-    DS_ERR_LOAD_VOLT     = 0x0200,
+    DS_INV_CURR_OVER_1   = 0x0100,
+    DS_INV_CURR_OVER_2   = 0x0200,
+    DS_ERR_LOAD_VOLT     = 0x0400,
     DS_ERR_UNKNOWN       = 0x0000
 }EDeviceState;
 
@@ -100,6 +101,7 @@ typedef struct SApp_ {
 
     SAdcValue       inverterCurr;
     _iq             maxInverterCurr;
+    _iq             maxInverterCurr2;
 
     SAdcValue       lineDetectVolt;
     _iq             maxLineDetectVolt;
@@ -107,7 +109,12 @@ typedef struct SApp_ {
     SAdcValue       loadDetectVolt;
     _iq             maxLoadDetectVolt;
 
+    BOOL            shortCurrent;
+    BOOL            overCurrent1;
+    BOOL            overCurrent2;
+
     void            *hTimer;
+    void            *hTimerProtect;
 }SApp;
 
 /***************** Macros (Inline Functions) Definitions *********************/
@@ -152,6 +159,21 @@ typedef struct SApp_ {
                                             (adc).coeff = coe;      \
                      MATH_EMAVG_IQ_C_INIT(adc.sEMA, _IQ30(2*PI* (fc) / Inverter_Pwm_Freq)); \
                                             }
+
+#define App_StartBstInv(pApp)       { \
+                                        Inv_Start(&(pApp)->sInverter);      \
+                                        Boost_Start(&(pApp)->sBooster);}
+
+#define App_StopBstInv(pApp)        { \
+                                        Boost_Stop(&(pApp)->sBooster);      \
+                                        Inv_Stop(&(pApp)->sInverter); }
+
+#define App_StopUps(pApp)           { \
+                                    App_StopBstInv(pApp); \
+                                    GPIO_SET_LOW_DISP_UPS_RUN(); \
+                                    GPIO_SET_LOW_CTRL_RELAY();  \
+                                    (pApp)->eDevSm = DSM_STOP_UPS; \
+                                    }
 
 /************************** Function Prototypes ******************************/
 void App_Init(SApp *pApp);

@@ -29,6 +29,37 @@
 _iq sinValue = 0;
 _iq lastSinValue = 0;
 uint16_t duty;
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+
+__interrupt void epwm1_isr(void)
+{
+
+    EPwm1Regs.ETCLR.bit.INT = 1;
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
+}
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+
+__interrupt void epwm2_isr(void)
+{
+
+    EPwm2Regs.ETCLR.bit.INT = 1;
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
+}
 
 /*****************************************************************************/
 /** @brief
@@ -64,7 +95,6 @@ __interrupt void epwm4_isr(void)
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
 }
 
-
 /*****************************************************************************/
 /** @brief
  *
@@ -73,28 +103,19 @@ __interrupt void epwm4_isr(void)
  *  @return Void.
  *  @note
  */
-
-__interrupt void epwm1_isr(void)
+__interrupt void epwm1_tzint_isr(void)
 {
 
-    EPwm1Regs.ETCLR.bit.INT = 1;
-    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
-}
+    LREP("Trip zone int event\r\n");
+    EALLOW;
+    EPwm1Regs.TZCLR.bit.INT = 1;
+    //EPwm1Regs.TZCLR.bit.OST = 1;
+    EPwm1Regs.TZCLR.bit.DCAEVT1 = 1;
+    EDIS;
 
-/*****************************************************************************/
-/** @brief
- *
- *
- *  @param
- *  @return Void.
- *  @note
- */
+    App_StopUps(&sApp);
 
-__interrupt void epwm2_isr(void)
-{
-
-    EPwm2Regs.ETCLR.bit.INT = 1;
-    PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP2;
 }
 
 
@@ -111,7 +132,6 @@ __interrupt void cpu_timer0_isr(void)
     CpuTimer0.InterruptCount++;
     sSysTick.u32SystemTickCount++;
     Timer_Update();
-
     // Acknowledge this interrupt to receive more interrupts from group 1
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
@@ -174,12 +194,6 @@ __interrupt void adc_isr(void)
 
 
 
-__interrupt void epwm1_tzint_isr(void)
-{
-
-    LREP("Trip zone int event\r\n");
-    PieCtrlRegs.PIEACK.all = PIEACK_GROUP2;
-}
 
 
 

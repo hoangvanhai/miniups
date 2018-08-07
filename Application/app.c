@@ -16,17 +16,12 @@
 /**************************** Type Definitions *******************************/
 
 /***************** Macros (Inline Functions) Definitions *********************/
-#define App_StartBstInv(pApp)       { \
-                                        Inv_Start(&(pApp)->sInverter);      \
-                                        Boost_Start(&(pApp)->sBooster);}
 
-#define App_StopBstInv(pApp)        { \
-                                        Boost_Stop(&(pApp)->sBooster);      \
-                                        Inv_Stop(&(pApp)->sInverter); }
 
 
 /************************** Function Prototypes ******************************/
 static void Clb_AppControl(uint32_t tick, void *p_arg);
+static void Clb_AppProtect(uint32_t tick, void *p_arg);
 /************************** Variable Definitions *****************************/
 SApp sApp;
 
@@ -67,7 +62,12 @@ void App_Init(SApp *pApp) {
     pApp->eDevSm = DSM_STOP_UPS;
     // init timer for control time event
     pApp->hTimer = Timer_Create(Clb_AppControl, pApp);
-    Timer_SetRate(pApp->hTimer, Inverter_Fault_Clear_Time * 2);
+    Timer_SetRate(pApp->hTimer, 2000);
+
+    pApp->hTimerProtect = Timer_Create(Clb_AppProtect, pApp);
+    Timer_SetRate(pApp->hTimerProtect, 5000);
+
+
 
     // init setting up
     Adc_InitValue(pApp->battVolt,                   /* adc node */
@@ -95,9 +95,9 @@ void App_Init(SApp *pApp) {
                   Adc_Noise_Cuttoff_Freq);
 
     Adc_InitValue(pApp->inverterCurr,
-                  0,
-                  _IQ24(0.001),
-                  10,
+                  1,
+                  _IQ24(Adc_Inverter_Current_Rat),
+                  1000,
                   10,
                   Adc_Noise_Cuttoff_Freq);
 
@@ -122,12 +122,17 @@ void App_Init(SApp *pApp) {
     pApp->minBoostVolt          = _IQ18(Inverter_Dcbus_Under);
 
     pApp->maxBoostCurr          = _IQ18(Boost_Trip_Curr);
-    pApp->maxInverterCurr       = _IQ18(Inverter_Output_Current_Trip);
+    pApp->maxInverterCurr       = _IQ18(Inverter_OCL_Cur_Value);
+    pApp->maxInverterCurr2      = _IQ18(Inverter_OCS_Cur_Value);
     pApp->maxLineDetectVolt     = _IQ18(AC_Detect_Level);
     pApp->maxLoadDetectVolt     = _IQ18(AC_Detect_Level);
 
     pApp->lastBoostVolt         = 0;
     pApp->lastBattVolt          = 0;
+
+    pApp->shortCurrent          = FALSE;
+    pApp->overCurrent1          = FALSE;
+    pApp->overCurrent2          = FALSE;
 
 #if Build_Option == Build_Boost_Only
     pApp->battVolt.realValue            = pApp->maxBattVolt - _IQ(1);
@@ -145,12 +150,12 @@ void App_Init(SApp *pApp) {
     //pApp->loadDetectVolt.realValue    = pApp->maxLoadDetectVolt - _IQ(1)
 
 #elif Build_Option == Build_Inverter_All
-    pApp->battVolt.realValue            = pApp->maxBattVolt - _IQ(1);
-    pApp->boostCurr.realValue           = pApp->maxBoostCurr - _IQ(200) ;
-    pApp->boostVolt.realValue           = pApp->maxBoostVolt + _IQ(5) ;
-    pApp->inverterCurr.realValue        = pApp->maxInverterCurr - _IQ(10);
-    pApp->lineDetectVolt.realValue      = pApp->maxLineDetectVolt + _IQ(1);
-    pApp->loadDetectVolt.realValue      = pApp->maxLoadDetectVolt - _IQ(1)
+    pApp->battVolt.realValue            = pApp->maxBattVolt - _IQ18(1);
+    pApp->boostCurr.realValue           = pApp->maxBoostCurr - _IQ18(200) ;
+    pApp->boostVolt.realValue           = pApp->maxBoostVolt - _IQ18(5) ;
+    pApp->inverterCurr.realValue        = pApp->maxInverterCurr - _IQ18(10);
+    pApp->lineDetectVolt.realValue      = pApp->maxLineDetectVolt + _IQ18(1);
+    //pApp->loadDetectVolt.realValue    = pApp->maxLoadDetectVolt - _IQ(1)
 #elif Build_Option == Build_Ups_All
     pApp->battVolt.realValue            = 0;
     pApp->boostCurr.realValue           = 0;
@@ -179,6 +184,22 @@ static void Clb_AppControl(uint32_t tick, void *p_arg) {
     }
     Timer_Stop(sApp.hTimer);
 }
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+static void Clb_AppProtect(uint32_t tick, void *p_arg) {
+    (void)tick;
+    (void)p_arg;
+    App_StopUps(&sApp);
+    Timer_Stop(sApp.hTimerProtect);
+}
+
 /*****************************************************************************/
 /** @brief
  *
@@ -226,17 +247,17 @@ void App_ProcessInput(SApp *pApp) {
 #elif Build_Option == Build_Inverter_Fix  // only inverter
     //Adc_CalcValue(sApp.battVolt,        AdcResult.ADCRESULT0);
     Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
-    //Adc_CalcValue(sApp.inverterCurr,    AdcResult.ADCRESULT2);
+    Adc_CalcValue(sApp.inverterCurr,     AdcResult.ADCRESULT2);
     //Adc_CalcValue(sApp.boostCurr,       AdcResult.ADCRESULT3);
     //Adc_CalcValue(sApp.lineDetectVolt,  AdcResult.ADCRESULT4);
     //Adc_CalcValue(sApp.loadDetectVolt,  AdcResult.ADCRESULT5);
 
 
 #elif Build_Option == Build_Inverter_All // all feature regardless AC and LOAD
-    Adc_CalcValue(sApp.battVolt,        AdcResult.ADCRESULT0);
-    Adc_CalcValue(sApp.boostVolt,       AdcResult.ADCRESULT1);
-    Adc_CalcValue(sApp.inverterCurr,    AdcResult.ADCRESULT2);
-    Adc_CalcValue(sApp.boostCurr,       AdcResult.ADCRESULT3);
+    //Adc_CalcValue(sApp.battVolt,        AdcResult.ADCRESULT0);
+    Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
+    Adc_CalcValue(sApp.inverterCurr,     AdcResult.ADCRESULT2);
+    //Adc_CalcValue(sApp.boostCurr,       AdcResult.ADCRESULT3);
     //Adc_CalcValue(sApp.lineDetectVolt,  AdcResult.ADCRESULT4);
     //Adc_CalcValue(sApp.loadDetectVolt,  AdcResult.ADCRESULT5);
 
@@ -328,8 +349,20 @@ void App_ProcessInput(SApp *pApp) {
 
 /*****************************************************************************/
 /** @brief
- *
- *
+    > Max            //
+    protect 2
+    > Lev2           //
+    if not protect, protect 1
+    else
+    keep prev state
+    > Lev2Shake  //
+    protect 1
+    > Lev1       //
+    do nothing (keep prev state)
+    > Lev1Shake  //
+    normal operate
+    > 0
+
  *  @param
  *  @return Void.
  *  @note
@@ -337,7 +370,6 @@ void App_ProcessInput(SApp *pApp) {
 
 void App_Control(SApp *pApp) {
 
-#if 1
     /*
      * CHECK CONDITION AND CONTROL
      */
@@ -409,11 +441,51 @@ void App_Control(SApp *pApp) {
     /*
      * Check inverter current
      */
-//    if(pApp->inverterCurr.realValue < pApp->maxInverterCurr) { // Normal current
-//        App_ClearDevState(pApp, DS_ERR_INV_CURR);
-//    } else { // Over current after Inverter
-//        App_SetDevState(pApp, DS_ERR_INV_CURR);
-//    }
+    // normal operate
+    if(pApp->inverterCurr.realValue < pApp->maxInverterCurr) {
+        // 1.normal operate
+        App_ClearDevState(pApp, DS_INV_CURR_OVER_1);
+        App_ClearDevState(pApp, DS_INV_CURR_OVER_2);
+        if(Timer_IsRunning(pApp->hTimerProtect)) {
+            Timer_Stop(pApp->hTimerProtect);
+        }
+    } else if(pApp->inverterCurr.realValue >= pApp->maxInverterCurr &&
+            (pApp->inverterCurr.realValue < pApp->maxInverterCurr +
+            _IQ18(Inverter_Current_Offset))) {
+        // 2. keep prev state
+
+    } else if((pApp->inverterCurr.realValue >= pApp->maxInverterCurr +
+            _IQ18(Inverter_Current_Offset)) &&
+            pApp->inverterCurr.realValue < pApp->maxInverterCurr2) {
+        // 3. protect 1
+        if(pApp->eDevState != (DS_RUN_UPS | DS_INV_CURR_OVER_1)) {
+            App_SetDevState(pApp, DS_INV_CURR_OVER_1);
+            App_ClearDevState(pApp, DS_INV_CURR_OVER_2);
+            Timer_StartAt(pApp->hTimerProtect, Inverter_OCL_Wait_Time);
+        }
+
+    } else if((pApp->inverterCurr.realValue >= pApp->maxInverterCurr +
+            _IQ18(Inverter_Current_Offset)) &&
+            pApp->inverterCurr.realValue < pApp->maxInverterCurr2) {
+        // 4. if not protect -> start protect 1
+        if(!Timer_IsRunning(pApp->hTimerProtect)) {
+            App_SetDevState(pApp, DS_INV_CURR_OVER_1);
+            App_ClearDevState(pApp, DS_INV_CURR_OVER_2);
+            Timer_StartAt(pApp->hTimerProtect, Inverter_OCL_Wait_Time);
+        } else { // else keep prev state
+
+        }
+
+    } else if(pApp->inverterCurr.realValue >=
+            (pApp->maxInverterCurr2 + _IQ18(Inverter_Current_Offset))) {
+        // 5. protect 2
+        if(pApp->eDevState != (DS_RUN_UPS | DS_INV_CURR_OVER_2)) {
+            App_ClearDevState(pApp, DS_INV_CURR_OVER_1);
+            App_SetDevState(pApp, DS_INV_CURR_OVER_2);
+            Timer_StartAt(pApp->hTimerProtect, Inverter_OCS_Wait_Time);
+        }
+
+    }
 
     /*
      * Check Load out available
@@ -424,7 +496,6 @@ void App_Control(SApp *pApp) {
 //        App_ClearDevState(pApp, DS_ERR_LOAD_VOLT);
 //    }
 
-#endif
 
     switch (pApp->eDevSm) {
     case DSM_STOP_UPS:
@@ -439,12 +510,6 @@ void App_Control(SApp *pApp) {
             if(Timer_IsRunning(pApp->hTimer))
                 Timer_Stop(pApp->hTimer);
         }
-        /* move to callback timer event for delay 100 ms before start UPS */
-        /*if(pApp->eDevState == DS_RUN_UPS) {
-            Boost_Start(&pApp->sBooster);
-            GPIO_SET_HIGH_CTRL_RELAY();
-            pApp->eDevSm = DSM_STARTING_BOOSTER;
-        }*/
         break;
     case DSM_STARTING_BOOSTER:
         if(pApp->eDevState == DS_RUN_UPS) {
@@ -460,7 +525,7 @@ void App_Control(SApp *pApp) {
         }
         break;
     case DSM_STARTING_INVERTER:
-        if(pApp->eDevSm == DSM_STARTING_INVERTER) {
+        if(pApp->eDevState == DS_RUN_UPS) {
             // calculate gain on starting up inverter
 
             _iq gain = _IQ24div(pApp->sInverter.bCoeff - pApp->boostVolt.realValue, pApp->sInverter.aCoeff);
@@ -476,41 +541,39 @@ void App_Control(SApp *pApp) {
                 //LREP("inc gain = %d\r\n", _IQ24int(_IQ24mpy(currGain, _IQ24(100))));
             } else {
                 pApp->eDevSm = DSM_RUNNING_UPS;
+                GPIO_SET_HIGH_DISP_UPS_RUN();
             }
-            GPIO_SET_HIGH_DISP_UPS_RUN();
         } else {
-            App_StopBstInv(pApp);
-            GPIO_SET_LOW_DISP_UPS_RUN();
-            GPIO_SET_LOW_CTRL_RELAY();
-            pApp->eDevSm = DSM_STOP_UPS;
+            App_StopUps(pApp);
         }
         break;
     case DSM_RUNNING_UPS:
-        if(pApp->eDevState != DS_RUN_UPS) {
-            App_StopBstInv(pApp);
-            GPIO_SET_LOW_DISP_UPS_RUN();
-            GPIO_SET_LOW_CTRL_RELAY();
-            pApp->eDevSm = DSM_STOP_UPS;
+
+        // Keep running inverter
+        if(pApp->eDevState == DS_RUN_UPS                        ||
+           pApp->eDevState == (DS_RUN_UPS | DS_INV_CURR_OVER_1) ||
+           pApp->eDevState == (DS_RUN_UPS | DS_INV_CURR_OVER_2)) {
+
+            // update inverter sine value factor
+            if(pApp->lastBoostVolt != pApp->boostVolt.realValue) {
+
+                _iq gain = _IQdiv(pApp->sInverter.bCoeff - pApp->boostVolt.realValue,
+                                  pApp->sInverter.aCoeff);
+
+                //_iq gain = _IQ(0.8);
+
+                gain += _IQ24mpyIQX(pApp->sInverter.currFbFact, 24, pApp->inverterCurr.realValue, 18);
+                gain = MIN(gain, pApp->sInverter.gainMax);
+                Inv_SetGain(&pApp->sInverter, gain);
+                pApp->lastBoostVolt = pApp->boostVolt.realValue;
+                //LREP("adc: %d\r\n", (long)_IQ18int(pApp->boostVolt.realValue));
+
+            }
+        } else { // Stop device
+            App_StopUps(pApp);
             return;
         }
 
-        // update inverter sine value factor
-        if(pApp->lastBoostVolt != pApp->boostVolt.realValue) {
-
-            _iq gain = _IQdiv(pApp->sInverter.bCoeff - pApp->boostVolt.realValue,
-                              pApp->sInverter.aCoeff);
-
-            //_iq gain = _IQ(0.8);
-
-#if Build_Option == Build_Inverter_All || Build_Option == Build_Ups_All
-            gain += _IQmpy(pApp->sInverter.currFbFact, pApp->inverterCurr.realValue);
-#endif
-            gain = MIN(gain, pApp->sInverter.gainMax);
-            Inv_SetGain(&pApp->sInverter, gain);
-            pApp->lastBoostVolt = pApp->boostVolt.realValue;
-            //LREP("adc: %d\r\n", (long)_IQ18int(pApp->boostVolt.realValue));
-
-        }
 
         break;
 

@@ -68,6 +68,11 @@
 
 ////////////////////// ADC_CONFIG CONFIG SECTION ///////////////////////////////////
 #define Adc_Noise_Cuttoff_Freq          (5) // Hz
+#define Adc_Reference_Volt              (3.226) //V
+#define Adc_Max_Value_12_Bits           (4095)
+#define Adc_Inverter_Shunt_Volt_Rat     (3.63)
+#define Adc_Inverter_Current_Rat        (Adc_Reference_Volt /   \
+                                        (Adc_Inverter_Shunt_Volt_Rat * Adc_Max_Value_12_Bits))
 
 
 ////////////////////// BOOST CONFIG SECTION ///////////////////////////////////
@@ -130,11 +135,16 @@
 #define Inverter_Dcbus_Under            40  //300  // Vdc. Điện áp DC đầu vào bắt đầu cho chạy inverter.
 #define Inverter_Dcbus_Over             70  //350  // Vdc. Điện áp DC đầu vào ngắt inverter, không cho phép chạy lại.
 
-#define Inverter_Output_Current_Trip    2000 // mV, Điện áp tương ứng với dòng điện bảo vệ quá tải đo tại chân ADC.
-#define Inverter_Fault_Clear_Time       1000 // ms, thời gian clear bảo vệ quá tải.
-#define Inverter_Trip_Restart_Time      10   // Dải từ 0-100. Số lần clear bảo vệ quá tải, hết số lần này khóa mạch luôn.
+#define Inverter_OCL_Cur_Value          (2.000) // A, Điện áp tương ứng với dòng điện bảo vệ quá tải đo tại chân ADC.
+#define Inverter_OCL_Wait_Time          1000 // ms, thời gian clear bảo vệ quá tải.
+#define Inverter_OCS_Cur_Value          (3.000) // A, dòng khởi động cho phép trong khoảng thời gian khởi động
+#define Inverter_OCS_Wait_Time          100  // ms, thời gian khởi động tải
+#define Inverter_Trip_Restart_Num       10   // Dải từ 0-100. Số lần clear bảo vệ quá tải, hết số lần này khóa mạch luôn.
+#define Inverter_Current_Offset         (0.1)   //
+#define Inverter_SC_Protect_Value       (0.88)  // short current max value = (Adc_Reference_Volt / Adc_Inverter_Shunt_Volt_Rat)
 
 
+#define Inverter_Feedback_Curr_Rat      (0.25)
 
 // Định nghĩa tham số cho chức năng chuyển mạch điện lưới - inverter
 #define AC_Detect_Level                 2.500   // mV. Điện áp AC_detect cao hơn ngưỡng này được hiểu là sự kiện mất lưới.

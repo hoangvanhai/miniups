@@ -298,43 +298,6 @@ void UART_Send(int ch) {
     SciaRegs.SCITXBUF=ch;
 }
 
-/*****************************************************************************/
-/** @brief
- *
- *
- *  @param
- *  @return Void.
- *  @note
- */
-void PWM_Inverter_Init() {
-
-    EALLOW;
-    // PWM1H
-    GpioCtrlRegs.GPAPUD.bit.GPIO0 = 1;    // Disable pull-up on GPIO0 (EPWM1A)
-    GpioCtrlRegs.GPAMUX1.bit.GPIO0 = 1;   // Configure GPIO0 as EPWM1A
-
-    // PWM1L
-    GpioCtrlRegs.GPAPUD.bit.GPIO1 = 1;    // Disable pull-up on GPIO1 (EPWM1B)
-    GpioCtrlRegs.GPAMUX1.bit.GPIO1 = 1;   // Configure GPIO1 as EPWM1B
-
-    // PWM2H
-    GpioCtrlRegs.GPAPUD.bit.GPIO2 = 1;    // Disable pull-up on GPIO2 (EPWM2A)
-    GpioCtrlRegs.GPAMUX1.bit.GPIO2 = 1;   // Configure GPIO2 as EPWM2A
-
-    // PWM2L
-    GpioCtrlRegs.GPAPUD.bit.GPIO3 = 1;    // Disable pull-up on GPIO3 (EPWM2B)
-    GpioCtrlRegs.GPAMUX1.bit.GPIO3 = 1;   // Configure GPIO3 as EPWM2B
-    EDIS;
-
-    EALLOW;
-    SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 0;
-    EDIS;
-    // Setting inverter pwm
-
-    EALLOW;
-    SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;
-    EDIS;
-}
 
 
 /*****************************************************************************/
@@ -399,28 +362,6 @@ void ADC_Init() {
 
     ADC_SocConfig(ChSel, TrigSel, ACQPS, ADC_NUM_CHAN_USED, 0);
 
-
-//    EALLOW;
-//    AdcRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-//
-//    AdcRegs.INTSEL1N2.bit.INT1E     = 1;    // Enabled ADCINT1
-//    AdcRegs.INTSEL1N2.bit.INT1CONT  = 0;    // Disable ADCINT1 Continuous mode
-//
-//    AdcRegs.INTSEL1N2.bit.INT1SEL   = 2;
-//    AdcRegs.ADCSOC0CTL.bit.CHSEL    = 4;
-//    AdcRegs.ADCSOC1CTL.bit.CHSEL    = 4;
-//    AdcRegs.ADCSOC2CTL.bit.CHSEL    = 2;
-//
-//
-//    AdcRegs.ADCSOC0CTL.bit.TRIGSEL  = ADCTRIG_CPU_TINT0;
-//    AdcRegs.ADCSOC1CTL.bit.TRIGSEL  = ADCTRIG_CPU_TINT0;
-//    AdcRegs.ADCSOC2CTL.bit.TRIGSEL  = ADCTRIG_CPU_TINT0;
-//
-//
-//    AdcRegs.ADCSOC0CTL.bit.ACQPS    = 6;
-//    AdcRegs.ADCSOC1CTL.bit.ACQPS    = 6;
-//    AdcRegs.ADCSOC2CTL.bit.ACQPS    = 6;
-//    EDIS;
 }
 
 /*****************************************************************************/
@@ -1074,34 +1015,20 @@ EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm) {
 
     EALLOW;
 
-    // Define an event (DCAEVT1) based on COMP2OUT
-    pwm->DCTRIPSEL.bit.DCAHCOMPSEL = DC_COMP1OUT;        // DCAH = Comparator 1 output
-    //(*ePWM[j]).DCTRIPSEL.bit.DCALCOMPSEL = DC_COMP2OUT;        // DCAL = TZ2
+    pwm->DCTRIPSEL.bit.DCAHCOMPSEL = DC_COMP1OUT;               // DCAH = Comparator 1 output
 
-    pwm->TZDCSEL.bit.DCAEVT1 = TZ_DCAH_HI;              // DCAEVT1 =  DCAH high (will become active as Comparator output goes high)
-    pwm->DCACTL.bit.EVT1SRCSEL = DC_EVT1;               // DCAEVT1 = DCAEVT1 (not filtered)
-    pwm->DCACTL.bit.EVT1FRCSYNCSEL = DC_EVT_ASYNC;      // Take async path
+    pwm->TZDCSEL.bit.DCAEVT1        = TZ_DCAH_HI;              // TZ_DCAH_HI;           // DCAEVT1 =  DCAH high
+                                                               // (will become active as Comparator output goes high)
+    pwm->DCACTL.bit.EVT1SRCSEL      = DC_EVT1;                 // DCAEVT1 = DCAEVT1 (not filtered)
+    pwm->DCACTL.bit.EVT1FRCSYNCSEL  = DC_EVT_ASYNC;            // Take async path
 
-    /*
-    // Define an event (DCBEVT2) based on COMP2OUT
-    (*ePWM[j]).DCTRIPSEL.bit.DCBHCOMPSEL = DC_COMP1OUT;  // DCBH = Comparator 1 output
-    //(*ePWM[j]).DCTRIPSEL.bit.DCBLCOMPSEL = DC_TZ2;     // DCAL = TZ2
-    (*ePWM[j]).TZDCSEL.bit.DCBEVT2 = TZ_DCBH_HI;         // DCBEVT2 =  (will become active as Comparator output goes high)
-    (*ePWM[j]).DCBCTL.bit.EVT2SRCSEL = DC_EVT2;          // DCBEVT2 = DCBEVT2 (not filtered)
-    (*ePWM[j]).DCBCTL.bit.EVT2FRCSYNCSEL = DC_EVT_ASYNC; // Take async path
-    */
+    pwm->TZCTL.bit.TZA              = TZ_FORCE_LO;               // EPWM1A will go high
+    pwm->TZCTL.bit.TZB              = TZ_FORCE_LO;             // EPWM1B will go low
 
-    // Enable DCAEVT1 and DCBEVT1 are one shot trip sources
-    // Note: DCxEVT1 events can be defined as one-shot.
-    //       DCxEVT2 events can be defined as cycle-by-cycle.
-    pwm->TZSEL.bit.DCAEVT1 = 1;
-    pwm->TZSEL.bit.DCBEVT1 = 1;
+    pwm->TZSEL.bit.DCAEVT1          = 1;
 
-   // What do we want the DCAEVT1 and DCBEVT1 events to do?
-   // DCAEVTx events can force EPWMxA
-   // DCBEVTx events can force EPWMxB
-    pwm->TZCTL.bit.TZA = TZ_FORCE_LO;                       // EPWM1A will go high
-    pwm->TZCTL.bit.TZB = TZ_FORCE_LO;                       // EPWM1B will go low
+    pwm->TZEINT.bit.DCAEVT1         = 1;
+    //pwm->TZEINT.bit.OST             = 1;
 
     EDIS;
 
@@ -1110,10 +1037,8 @@ EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm) {
 
 void COMP_ModuleConfig(struct COMP_REGS* cmp, uint16_t value) {
     EALLOW;
+    AdcRegs.ADCCTL1.bit.ADCBGPWD =  1;
     GpioCtrlRegs.AIOMUX1.bit.AIO2 = 2;          // Configure AIO2 (disable) for CMP1A (analog input) operation
-
-//  GpioCtrlRegs.GPBPUD.bit.GPIO42 = 1;         // Disable pull-up for GPIO34 (CMP3OUT)
-//  GpioCtrlRegs.GPBMUX1.bit.GPIO42 = 3;    / Configure GPIO34 for CMP3OUT operation
 
     cmp->COMPCTL.bit.COMPDACEN  = 1;        // Power up Comparator locally - enable compare blocks
     cmp->COMPCTL.bit.COMPSOURCE = 0;        // Connect the inverting input to internal DAC

@@ -43,8 +43,6 @@ void UART_SendStr(char *msg);
 void UART_SendNum(int num);
 void PWM_Init();
 
-void PWM_Inverter_Init();
-
 void SPI_Init();
 void ADC_Init();
 void CAP_Init();

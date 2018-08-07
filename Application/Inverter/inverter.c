@@ -50,6 +50,7 @@ void Inv_Init(SInverter *pInv) {
     pInv->gainMax        = _IQ24(Inverter_Max_Mf);
     pInv->aCoeff         = _IQ18(A_COEFF);
     pInv->bCoeff         = _IQ18(B_COEFF);
+    pInv->currFbFact     = _IQ24(Inverter_Feedback_Curr_Rat);
 }
 
 /*****************************************************************************/
@@ -127,17 +128,25 @@ void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
 #elif Inverter_Switching_Type == Inverter_Type_Open_Full
     PWM_2ChCntUpDownFullCfg(pwm1, freq, 1, 0);
     PWM_2ChCntUpDownFullCfg(pwm2, freq, 0, 0);
+
+
+    COMP_ModuleConfig((struct COMP_REGS*)&Comp1Regs,
+                      _IQ18int(_IQ18(1023 * Inverter_SC_Protect_Value *
+                                     Adc_Inverter_Shunt_Volt_Rat / Adc_Reference_Volt)));
+
     PWM_ModuleConfigTripZone(pwm1);
     PWM_ModuleConfigTripZone(pwm2);
 
-    COMP_ModuleConfig((struct COMP_REGS*)&Comp1Regs, 1000); // fixed value for test
-    IER |= M_INT2;
 
     // Enable EPWM INTn in the PIE: Group 2 interrupt 1-3
-    PieCtrlRegs.PIEIER2.bit.INTx1 = 1;
+
     EALLOW;            // This is needed to write to EALLOW protected registers
-    PieVectTable.EPWM1_TZINT = &epwm1_tzint_isr;
-    EDIS;      // This is needed to disable write to EALLOW protected registers
+
+    PieCtrlRegs.PIEIER2.bit.INTx1   = 1;
+    PieVectTable.EPWM1_TZINT        = &epwm1_tzint_isr;
+    IER |= M_INT2;
+    EDIS;               // This is needed to disable write to EALLOW protected registers
+
 
 #ifdef TEST_INV_PWM_SETTING
     PWM_2ChCntUpSetDutyFull(pwm1, 1, 300, 1);

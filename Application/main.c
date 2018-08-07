@@ -54,7 +54,7 @@ void Clb_Timer(uint32_t timeTick, void *p_arg) {
  */
 
 
-static long max  = -32767, min = 32767, tmp = 0;
+//static long max  = -32767, min = 32767, tmp = 0;
 
 void main(void)
 {
@@ -79,16 +79,24 @@ void main(void)
 //        LREP("adc: %d voltage: %d - gain: 0.%d\r\n", (long)AdcResult.ADCRESULT1, _IQ18int(sApp.boostVolt.realValue),
 //             _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)));
 
-        LREP("voltage: %d - gain: 0.%d\r\n", _IQ18int(_IQ18mpy(sApp.boostVolt.realValue, _IQ18(100))),
-                     _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)));
+//        LREP("voltage: %d - gain: 0.%d\r\n", _IQ18int(_IQ18mpy(sApp.boostVolt.realValue, _IQ18(100))),
+//                     _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)));
 
 //        LREP("adc1: %d adc2: %d adc3: %d adc4: %d\r\n",
 //             (long)AdcResult.ADCRESULT0, (long)AdcResult.ADCRESULT1,
 //             (long)AdcResult.ADCRESULT2, (long)AdcResult.ADCRESULT3);
 
-//        LREP("current: %d - gain: 0.%d\r\n", _IQ18int(sApp.inverterCurr.realValue),
-//                     _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)));
+        LREP("C: %d - V: %d - G: 0.%d STAT: 0x%x\r\n",
+             _IQ18int(_IQ18mpy(sApp.inverterCurr.realValue, _IQ18(100))),
+             _IQ18int(sApp.boostVolt.realValue),
+             _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)),
+             (long)sApp.eDevState);
 
+//        LREP("TZSEL: %x - TZDCSEL: %x - TZCTL: %x - TZEINT: %x - TZFLG: %x - TZCLR: %x - TZFRC: %x\r\n",
+//             (long)EPwm1Regs.TZSEL.all, (long)EPwm1Regs.TZDCSEL.all, (long)EPwm1Regs.TZCTL.all,
+//             (long)EPwm1Regs.TZEINT.all, (long)EPwm1Regs.TZFLG.all, (long)EPwm1Regs.TZCLR.all, (long)EPwm1Regs.TZFRC.all);
+
+        //LREP("COMPSTS %x - DACVAL: %x \r\n", (long)Comp1Regs.COMPSTS.bit.COMPSTS, (long)Comp1Regs.DACVAL.bit.DACVAL);
 #if 0
         int16_t value;
         value = _IQ18int(sApp.boostVolt.realValue);
