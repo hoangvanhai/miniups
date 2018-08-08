@@ -33,6 +33,7 @@
 #define APP_TIMER_PERIOD                1000
 
 #define APP_NUM_RA_OVER_CURR            3
+#define APP_NUM_TRIP_TO_LOCK            20
 #define APP_TIME_DA_OVER_CURR           3000        // ms
 
 // Định nghĩa tham số để build chương trình.

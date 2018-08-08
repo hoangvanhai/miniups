@@ -51,6 +51,8 @@ void App_Init(SApp *pApp) {
     pApp->counterAdc = 0;
     pApp->counterCtrl = 0;
     pApp->numRAOCL = APP_NUM_RA_OVER_CURR;
+    pApp->bDevLocked = FALSE;
+    pApp->numTripOccurs = 0;
     pApp->eDevState = DS_ERR_UNKNOWN;
 
     devStateInit = DS_RUN_UPS;
@@ -404,11 +406,14 @@ void App_Control(SApp *pApp) {
     /*
      * CHECK CONDITION AND CONTROL
      */
+    if(pApp->bDevLocked == TRUE)
+        return;
     /*
      * Check battery voltage
      * if volt < Batt_Under_Volt or volt > Batt_Over_Volt and booster is running -> stop Booster
      * if volt > Batt_Under_Volt + Batt_Hyst_Volt and booster is stopping -> start booster
      */
+
     if(pApp->battVolt.realValue <= pApp->minBattVolt) { // under low volt
         // Set error low voltage
         App_SetDevState(pApp, DS_BATT_VOLT_LOW);

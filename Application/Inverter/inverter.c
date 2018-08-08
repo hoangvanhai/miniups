@@ -20,6 +20,7 @@
 
 /************************** Function Prototypes ******************************/
 extern __interrupt void epwm1_tzint_isr(void);
+extern __interrupt void epwm2_tzint_isr(void);
 /************************** Variable Definitions *****************************/
 
 /*****************************************************************************/
@@ -142,10 +143,12 @@ void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
 
     EALLOW;            // This is needed to write to EALLOW protected registers
 
-    PieCtrlRegs.PIEIER2.bit.INTx1   = 1;
+
     PieVectTable.EPWM1_TZINT        = &epwm1_tzint_isr;
+    PieVectTable.EPWM2_TZINT        = &epwm2_tzint_isr;
     IER |= M_INT2;
     EDIS;               // This is needed to disable write to EALLOW protected registers
+
 
 
 #ifdef TEST_INV_PWM_SETTING
@@ -158,6 +161,9 @@ void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
     EALLOW;
     SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;
     EDIS;
+
+    PieCtrlRegs.PIEIER2.bit.INTx1   = 1;
+    PieCtrlRegs.PIEIER2.bit.INTx2   = 1;
 }
 
 /*****************************************************************************/

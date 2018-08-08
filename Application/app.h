@@ -113,7 +113,10 @@ typedef struct SApp_ {
     BOOL            overCurrent1;
     BOOL            overCurrent2;
 
+    BOOL            bDevLocked;
+
     int16_t         numRAOCL;       // times restart after overcurrent
+    int16_t         numTripOccurs;
 
     void            *hTimerControl;
     void            *hTimerProtect;

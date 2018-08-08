@@ -106,19 +106,52 @@ __interrupt void epwm4_isr(void)
 __interrupt void epwm1_tzint_isr(void)
 {
 
-    LREP("Trip Zone\r\n");
+    LREP("Trip Zone 1\r\n");
     EALLOW;
+    //EPwm1Regs.TZFRC.bit.CBC     = 1;
     EPwm1Regs.TZCLR.bit.INT     = 1;
-//    EPwm1Regs.TZCLR.bit.OST     = 1;
-//    EPwm1Regs.TZCLR.bit.DCAEVT1 = 1;
-//    EPwm1Regs.TZFRC.bit.CBC     = 1;
+    EPwm1Regs.TZCLR.bit.DCAEVT2 = 1;
     EDIS;
 
-    //App_StopUps(&sApp);
+    sApp.numTripOccurs++;
+    if(sApp.numTripOccurs < APP_NUM_TRIP_TO_LOCK) {
+//        sApp.eDevSm = DSM_STARTING_INVERTER;
+//        Inv_Start(&sApp.sInverter);
+//        sApp.sInverter.pwm1Handle->CMPA.half.CMPA = 0;
+//        sApp.sInverter.pwm2Handle->CMPA.half.CMPA = 0;
+        SINE1PHASE_RESET(&sApp.sInverter.sSine1Phase);
+    } else {
+        sApp.bDevLocked = TRUE;
+        App_StopUps(&sApp);
+    }
+
 
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP2;
 }
 
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+__interrupt void epwm2_tzint_isr(void)
+{
+
+    LREP("Trip Zone 2\r\n");
+    EALLOW;
+    //EPwm2Regs.TZFRC.bit.CBC     = 1;
+    EPwm2Regs.TZCLR.bit.INT     = 1;
+    EPwm2Regs.TZCLR.bit.DCAEVT2 = 1;
+    EDIS;
+
+    //App_StopUps(&sApp);
+
+
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP2;
+}
 
 /*****************************************************************************/
 /** @brief

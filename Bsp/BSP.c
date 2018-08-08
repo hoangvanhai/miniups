@@ -1003,6 +1003,7 @@ void ADC_SocConfig(int ChSel[], int Trigsel[],
     AdcRegs.ADCSOCFRC1.all = 0xFFFF;        // kick-start ADC
 }
 
+#if 0
 /*****************************************************************************/
 /** @brief
  *
@@ -1034,6 +1035,45 @@ EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm) {
 
     return PWM_SUCCESS;
 }
+
+#endif
+
+#if 1
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm) {
+
+    EALLOW;
+
+    pwm->DCTRIPSEL.bit.DCAHCOMPSEL = DC_COMP1OUT;               // DCAH = Comparator 1 output
+
+    pwm->TZDCSEL.bit.DCAEVT2        = TZ_DCAH_HI;              // TZ_DCAH_HI;           // DCAEVT1 =  DCAH high
+                                                               // (will become active as Comparator output goes high)
+    pwm->DCACTL.bit.EVT2SRCSEL      = DC_EVT2;                 // DCAEVT1 = DCAEVT1 (not filtered)
+    pwm->DCACTL.bit.EVT2FRCSYNCSEL  = DC_EVT_ASYNC;            // Take async path
+
+    pwm->TZCTL.bit.TZA              = TZ_FORCE_LO;             // EPWM1A will go high
+    pwm->TZCTL.bit.TZB              = TZ_FORCE_LO;             // EPWM1B will go low
+
+    pwm->TZSEL.bit.DCAEVT2          = 1;
+
+    pwm->TZEINT.bit.DCAEVT2         = 1;
+    //pwm->TZEINT.bit.CBC             = 1;
+
+    EDIS;
+
+    return PWM_SUCCESS;
+}
+
+
+#endif
 
 void COMP_ModuleConfig(struct COMP_REGS* cmp, uint16_t value) {
     EALLOW;
