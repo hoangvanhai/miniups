@@ -40,12 +40,19 @@ void Inv_Init(SInverter *pInv) {
     pInv->pwm1Handle    = (PWM_REGS *)&EPwm1Regs;
     pInv->pwm2Handle    = (PWM_REGS *)&EPwm2Regs;
     PWM_Inv_Init(pInv->pwm1Handle, pInv->pwm2Handle, pInv->freq);
-    pInv->genSinRatio   = Inverter_GenSin_Freq_Ratio;
+    pInv->genSinRatio   = Inverter_Pwm_Freq / Inverter_GenSin_Freq;
 
     Sin_Init(&pInv->sSine1Phase, Inverter_Sin_Freq,
              Inverter_Pwm_Freq,
-             _IQ24((Inverter_Sin_Freq * 2 * PI) / ((4 * Inverter_Pwm_Freq) / (5 * Inverter_GenSin_Freq_Ratio))),
+             _IQ24((Inverter_Sin_Freq * 2 * PI) / (0.5 * Inverter_GenSin_Freq)),
              _IQ24(Inverter_Start_Mf), _IQ24(1.0));
+
+
+//    Sin_Init(&pInv->sSine1Phase, Inverter_Sin_Freq,
+//             Inverter_Pwm_Freq,
+//             _IQ24((Inverter_Sin_Freq * 2 * PI) / Inverter_GenSin_Freq),
+//             _IQ24(Inverter_Start_Mf), _IQ24(1.0));
+
 
     pInv->gainStep       = _IQ24(Inverter_Step_Mf);         // set gain step is 0.01
     pInv->gainMax        = _IQ24(Inverter_Max_Mf);
@@ -84,6 +91,8 @@ void Inv_Stop(SInverter *pInv) {
 #elif Inverter_Switching_Type == Inverter_Type_Open_Full
     pInv->pwm1Handle->CMPA.half.CMPA = 0;
     pInv->pwm2Handle->CMPA.half.CMPA = 0;
+    pInv->pwm1Handle->CMPB = 0;
+    pInv->pwm2Handle->CMPB = 0;
 #endif
     LREP("Stop Inverter\r\n");
 }
@@ -141,6 +150,9 @@ void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
 
     // Enable EPWM INTn in the PIE: Group 2 interrupt 1-3
 
+    PieCtrlRegs.PIEIER2.bit.INTx1   = 1;
+    PieCtrlRegs.PIEIER2.bit.INTx2   = 1;
+
     EALLOW;            // This is needed to write to EALLOW protected registers
 
 
@@ -148,8 +160,6 @@ void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
     PieVectTable.EPWM2_TZINT        = &epwm2_tzint_isr;
     IER |= M_INT2;
     EDIS;               // This is needed to disable write to EALLOW protected registers
-
-
 
 #ifdef TEST_INV_PWM_SETTING
     PWM_2ChCntUpSetDutyFull(pwm1, 1, 300, 1);
@@ -162,8 +172,7 @@ void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
     SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;
     EDIS;
 
-    PieCtrlRegs.PIEIER2.bit.INTx1   = 1;
-    PieCtrlRegs.PIEIER2.bit.INTx2   = 1;
+
 }
 
 /*****************************************************************************/

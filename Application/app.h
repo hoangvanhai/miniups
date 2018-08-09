@@ -113,13 +113,14 @@ typedef struct SApp_ {
     BOOL            overCurrent1;
     BOOL            overCurrent2;
 
-    BOOL            bDevLocked;
+    BOOL            bDevLocked;     // device is locked by error in operate
 
     int16_t         numRAOCL;       // times restart after overcurrent
     int16_t         numTripOccurs;
 
     void            *hTimerControl;
-    void            *hTimerProtect;
+    void            *hTimerProtectOverCurrent;
+    void            *hTimerProtectTripCurrent;
 }SApp;
 
 /***************** Macros (Inline Functions) Definitions *********************/

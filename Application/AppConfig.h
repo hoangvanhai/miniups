@@ -19,7 +19,7 @@
 #define APP_PLATFORM                    APP_STAND_ALONE
 
 #define DEBUG
-//#define CONSOLE
+#define CONSOLE
 
 #define FTBCLK                          40000000   //Hz. Sử dụng với chip TMS320F28020
 //#define FTBCLK                        60000000   //Hz. Sử dụng với chip TMS320F28026/28027
@@ -33,7 +33,7 @@
 #define APP_TIMER_PERIOD                1000
 
 #define APP_NUM_RA_OVER_CURR            3
-#define APP_NUM_TRIP_TO_LOCK            20
+#define APP_NUM_TRIP_TO_LOCK            2
 #define APP_TIME_DA_OVER_CURR           3000        // ms
 
 // Định nghĩa tham số để build chương trình.
@@ -128,7 +128,7 @@
 #define Inverter_Pwm_Freq               50000   //50000   //25000   // kHz. Dải từ 5-100kHz. Tần số điều chế tính theo Khz
 #define Inverter_Pwm_Dead_Time          500     // ns. Dải từ 100-3000ns. Thời gian dead_time.
 
-#define Inverter_GenSin_Freq_Ratio      4       // use epwm1 freq as trigger adc/gen sin value
+#define Inverter_GenSin_Freq            50000   //12500   // use timer2 gen sin value
 
 // starting
 #define Inverter_Soft_Start_Time        100  // ms. Thời gian khởi động mềm.

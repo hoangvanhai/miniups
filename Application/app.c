@@ -21,7 +21,8 @@
 
 /************************** Function Prototypes ******************************/
 static void Clb_AppControl(uint32_t tick, void *p_arg);
-static void Clb_AppProtect(uint32_t tick, void *p_arg);
+static void Clb_AppProtectOverCurrent(uint32_t tick, void *p_arg);
+static void Clb_AppProtectTripCurrent(uint32_t tick, void *p_arg);
 /************************** Variable Definitions *****************************/
 SApp sApp;
 
@@ -55,24 +56,22 @@ void App_Init(SApp *pApp) {
     pApp->numTripOccurs = 0;
     pApp->eDevState = DS_ERR_UNKNOWN;
 
-    devStateInit = DS_RUN_UPS;
-//    devStateInit =  DS_RUN_UPS | DS_AC_AVAIL |
-//                    DS_BATT_VOLT_LOW | DS_BOOST_VOLT_LOW |
-//                    DS_ERR_BOOST_CURR | DS_ERR_INV_CURR;    // | DS_ERR_LOAD_VOLT;
-
-    App_SetDevState(pApp, devStateInit);
-
     pApp->eDevSm = DSM_STOP_UPS;
-    // init timer for control time event
+
+    // init timer for control ups behaviours
     pApp->hTimerControl = Timer_Create(Clb_AppControl, pApp);
     Timer_SetRate(pApp->hTimerControl, 50000);
 
-    pApp->hTimerProtect = Timer_Create(Clb_AppProtect, pApp);
-    Timer_SetRate(pApp->hTimerProtect, 50000);
+    // timer for protect over current event
+    pApp->hTimerProtectOverCurrent = Timer_Create(Clb_AppProtectOverCurrent, pApp);
+    Timer_SetRate(pApp->hTimerProtectOverCurrent, 50000);
+
+    // timer for protect trip current
+    pApp->hTimerProtectTripCurrent = Timer_Create(Clb_AppProtectTripCurrent, pApp);
+    Timer_SetRate(pApp->hTimerProtectTripCurrent, 50000);
 
 
-
-    // init setting up
+    // init input caclculating
     Adc_InitValue(pApp->battVolt,                   /* adc node */
                   0,                                /* type adc node */
                   _IQ24(1.0),                       /* coefficient for calculate realvalue */
@@ -144,6 +143,7 @@ void App_Init(SApp *pApp) {
     pApp->inverterCurr.realValue        = pApp->maxInverterCurr - _IQ(10);
     pApp->lineDetectVolt.realValue      = pApp->maxLineDetectVolt + _IQ(1);
     pApp->loadDetectVolt.realValue      = pApp->maxLoadDetectVolt - _IQ(1)
+    devStateInit = DS_RUN_UPS;
 #elif Build_Option == Build_Inverter_Fix
     pApp->battVolt.realValue            = pApp->maxBattVolt - _IQ18(1);
     pApp->boostCurr.realValue           = pApp->maxBoostCurr - _IQ18(200) ;
@@ -151,7 +151,7 @@ void App_Init(SApp *pApp) {
     pApp->inverterCurr.realValue        = pApp->maxInverterCurr - _IQ18(10);
     pApp->lineDetectVolt.realValue      = pApp->maxLineDetectVolt + _IQ18(1);
     //pApp->loadDetectVolt.realValue    = pApp->maxLoadDetectVolt - _IQ(1)
-
+    devStateInit = DS_RUN_UPS;
 #elif Build_Option == Build_Inverter_All
     pApp->battVolt.realValue            = pApp->maxBattVolt - _IQ18(1);
     pApp->boostCurr.realValue           = pApp->maxBoostCurr - _IQ18(200) ;
@@ -166,8 +166,12 @@ void App_Init(SApp *pApp) {
     pApp->inverterCurr.realValue        = 0;
     pApp->lineDetectVolt.realValue      = 0;
     pApp->loadDetectVolt.realValue      = 0;
+    devStateInit =  DS_RUN_UPS | DS_AC_AVAIL |
+                    DS_BATT_VOLT_LOW | DS_BOOST_VOLT_LOW |
+                    DS_ERR_BOOST_CURR | DS_ERR_INV_CURR;    // | DS_ERR_LOAD_VOLT;
 #endif
 
+    App_SetDevState(pApp, devStateInit);
 
 
 }
@@ -180,26 +184,27 @@ void App_Init(SApp *pApp) {
  *  @note
  */
 static void Clb_AppControl(uint32_t tick, void *p_arg) {
+    SApp *pApp = (SApp*)p_arg;
     (void)tick;
-    (void)p_arg;
-    if(sApp.eDevState == DS_RUN_UPS) {
-        sApp.eDevSm = DSM_STARTING_BOOSTER;
+
+    if(pApp->eDevState == DS_RUN_UPS) {
+        pApp->eDevSm = DSM_STARTING_BOOSTER;
         LREP("starting booster\r\n");
     }
 
-    if(sApp.eDevState & DS_INV_CURR_OVER_1) {
+    if(pApp->eDevState & DS_INV_CURR_OVER_1) {
         LREP("Clear over current 1\r\n");
-        App_ClearDevState(&sApp, DS_INV_CURR_OVER_1);
-        sApp.overCurrent1 = FALSE;
+        App_ClearDevState(pApp, DS_INV_CURR_OVER_1);
+        pApp->overCurrent1 = FALSE;
     }
 
-    if(sApp.eDevState & DS_INV_CURR_OVER_2) {
+    if(pApp->eDevState & DS_INV_CURR_OVER_2) {
         LREP("Clear over current 2\r\n");
-        App_ClearDevState(&sApp, DS_INV_CURR_OVER_2);
-        sApp.overCurrent2 = FALSE;
+        App_ClearDevState(pApp, DS_INV_CURR_OVER_2);
+        pApp->overCurrent2 = FALSE;
     }
 
-    Timer_Stop(sApp.hTimerControl);
+    Timer_Stop(pApp->hTimerControl);
 }
 
 /*****************************************************************************/
@@ -210,52 +215,42 @@ static void Clb_AppControl(uint32_t tick, void *p_arg) {
  *  @return Void.
  *  @note
  */
-static void Clb_AppProtect(uint32_t tick, void *p_arg) {
+static void Clb_AppProtectOverCurrent(uint32_t tick, void *p_arg) {
+    SApp *pApp = (SApp *)p_arg;
+    (void)tick;
+
+    if(pApp->eDevState & DS_INV_CURR_OVER_1) {
+        pApp->overCurrent1 = TRUE;
+    }
+    if(pApp->eDevState & DS_INV_CURR_OVER_2) {
+        pApp->overCurrent2 = TRUE;
+    }
+
+    pApp->numRAOCL--;
+    if(pApp->numRAOCL > 0) {
+        LREP("start restart timer\r\n");
+        Timer_Stop(pApp->hTimerControl);
+        Timer_StartAt(pApp->hTimerControl, APP_TIME_DA_OVER_CURR);
+    }
+
+    Timer_Stop(pApp->hTimerProtectOverCurrent);
+
+    App_StopUps(pApp);
+}
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+static void Clb_AppProtectTripCurrent(uint32_t tick, void *p_arg) {
     (void)tick;
     (void)p_arg;
 
-    if(sApp.eDevState & DS_INV_CURR_OVER_1) {
-        sApp.overCurrent1 = TRUE;
-    }
-    if(sApp.eDevState & DS_INV_CURR_OVER_2) {
-        sApp.overCurrent2 = TRUE;
-    }
 
-    sApp.numRAOCL--;
-    if(sApp.numRAOCL > 0) {
-        LREP("start restart timer\r\n");
-        Timer_Stop(sApp.hTimerControl);
-        Timer_StartAt(sApp.hTimerControl, APP_TIME_DA_OVER_CURR);
-    }
-
-    Timer_Stop(sApp.hTimerProtect);
-
-    App_StopUps(&sApp);
-}
-
-/*****************************************************************************/
-/** @brief
- *
- *
- *  @param
- *  @return Void.
- *  @note
- */
-void App_ScanDigitalInput(SApp *pApp) {
-    (void)pApp;
-
-}
-
-/*****************************************************************************/
-/** @brief
- *
- *
- *  @param
- *  @return Void.
- *  @note
- */
-void App_ScanAnalogInput(SApp *pApp) {
-    (void)pApp;
 }
 
 /*****************************************************************************/
@@ -267,40 +262,40 @@ void App_ScanAnalogInput(SApp *pApp) {
  *  @note
  */
 void App_ProcessInput(SApp *pApp) {
-    static uint16_t counter = 0;
+    //static uint16_t counter = 0;
 #if Build_Option == Build_Boost_Only     // only boost
 
-    Adc_CalcValue(sApp.battVolt,        AdcResult.ADCRESULT0);
-    Adc_CalcValue(sApp.boostVolt,       AdcResult.ADCRESULT1);
-    //Adc_CalcValue(sApp.inverterCurr,    AdcResult.ADCRESULT2);
-    Adc_CalcValue(sApp.boostCurr,       AdcResult.ADCRESULT3);
-    //Adc_CalcValue(sApp.lineDetectVolt,  AdcResult.ADCRESULT4);
-    //Adc_CalcValue(sApp.loadDetectVolt,  AdcResult.ADCRESULT5);
+    Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
+    Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
+    //Adc_CalcValue(pApp->inverterCurr,    AdcResult.ADCRESULT2);
+    Adc_CalcValue(pApp->boostCurr,       AdcResult.ADCRESULT3);
+    //Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
+    //Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
 
 #elif Build_Option == Build_Inverter_Fix  // only inverter
-    //Adc_CalcValue(sApp.battVolt,        AdcResult.ADCRESULT0);
+    //Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
     Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
-    Adc_CalcValue(sApp.inverterCurr,     AdcResult.ADCRESULT2);
-    //Adc_CalcValue(sApp.boostCurr,       AdcResult.ADCRESULT3);
-    //Adc_CalcValue(sApp.lineDetectVolt,  AdcResult.ADCRESULT4);
-    //Adc_CalcValue(sApp.loadDetectVolt,  AdcResult.ADCRESULT5);
+    Adc_CalcValue(pApp->inverterCurr,     AdcResult.ADCRESULT2);
+    //Adc_CalcValue(pApp->boostCurr,       AdcResult.ADCRESULT3);
+    //Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
+    //Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
 
 
 #elif Build_Option == Build_Inverter_All // all feature regardless AC and LOAD
-    //Adc_CalcValue(sApp.battVolt,        AdcResult.ADCRESULT0);
+    //Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
     Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
-    Adc_CalcValue(sApp.inverterCurr,     AdcResult.ADCRESULT2);
-    //Adc_CalcValue(sApp.boostCurr,       AdcResult.ADCRESULT3);
-    //Adc_CalcValue(sApp.lineDetectVolt,  AdcResult.ADCRESULT4);
-    //Adc_CalcValue(sApp.loadDetectVolt,  AdcResult.ADCRESULT5);
+    Adc_CalcValue(pApp->inverterCurr,     AdcResult.ADCRESULT2);
+    //Adc_CalcValue(pApp->boostCurr,       AdcResult.ADCRESULT3);
+    //Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
+    //Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
 
 #elif Build_Option == Build_Ups_All      // all device feature
-    Adc_CalcValue(sApp.battVolt,        AdcResult.ADCRESULT0);
-    Adc_CalcValue(sApp.boostVolt,       AdcResult.ADCRESULT1);
-    Adc_CalcValue(sApp.inverterCurr,    AdcResult.ADCRESULT2);
-    Adc_CalcValue(sApp.boostCurr,       AdcResult.ADCRESULT3);
-    Adc_CalcValue(sApp.lineDetectVolt,  AdcResult.ADCRESULT4);
-    Adc_CalcValue(sApp.loadDetectVolt,  AdcResult.ADCRESULT5);
+    Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
+    Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
+    Adc_CalcValue(pApp->inverterCurr,    AdcResult.ADCRESULT2);
+    Adc_CalcValue(pApp->boostCurr,       AdcResult.ADCRESULT3);
+    Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
+    Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
 #endif
 
 
@@ -332,11 +327,12 @@ void App_ProcessInput(SApp *pApp) {
      * Control duty cycle
      */
 
+#if 1
     if(pApp->sInverter.eState == INV_RUNNING) {
-        counter++;
-        if(counter >= pApp->sInverter.genSinRatio)
+        //counter++;
+        //if(counter >= pApp->sInverter.genSinRatio)
         {
-            counter = 0;
+            //counter = 0;
             Sin_GenValueM(&pApp->sInverter.sSine1Phase);
 
             #if Inverter_Switching_Type == Inverter_Type_Open_Half
@@ -363,19 +359,20 @@ void App_ProcessInput(SApp *pApp) {
 
             #elif Inverter_Switching_Type == Inverter_Type_Open_Full
 
+            GPIO_TOGGLE_DISP_BATT_LOW();
             pApp->sInverter.pwm1Handle->CMPA.half.CMPA =
-                    MIN(pApp->sInverter.pwm1Handle->TBPRD,
                     _IQ24mpy(pApp->sInverter.sSine1Phase.sinPwmA,
-                             pApp->sInverter.pwm1Handle->TBPRD>>1));
+                             pApp->sInverter.pwm1Handle->TBPRD>>1);
 
             pApp->sInverter.pwm2Handle->CMPA.half.CMPA =
-                    MIN(pApp->sInverter.pwm2Handle->TBPRD,
                     _IQ24mpy(pApp->sInverter.sSine1Phase.sinPwmB,
-                             pApp->sInverter.pwm2Handle->TBPRD>>1));
+                             pApp->sInverter.pwm2Handle->TBPRD>>1);
 
             #endif
         }
     }
+
+#endif
 
 }
 
@@ -407,6 +404,9 @@ void App_Control(SApp *pApp) {
      * CHECK CONDITION AND CONTROL
      */
     if(pApp->bDevLocked == TRUE)
+        return;
+
+    if(pApp->numTripOccurs > 0)
         return;
     /*
      * Check battery voltage
@@ -486,9 +486,9 @@ void App_Control(SApp *pApp) {
         if(pApp->overCurrent2 == FALSE) {
             App_ClearDevState(pApp, DS_INV_CURR_OVER_2);
         }
-        if(Timer_IsRunning(pApp->hTimerProtect)) {
+        if(Timer_IsRunning(pApp->hTimerProtectOverCurrent)) {
             LREP("Stop protect\r\n");
-            Timer_Stop(pApp->hTimerProtect);
+            Timer_Stop(pApp->hTimerProtectOverCurrent);
         }
     } else if(pApp->inverterCurr.realValue >= pApp->maxInverterCurr &&
             (pApp->inverterCurr.realValue < pApp->maxInverterCurr +
@@ -503,17 +503,17 @@ void App_Control(SApp *pApp) {
             App_SetDevState(pApp, DS_INV_CURR_OVER_1);
             App_ClearDevState(pApp, DS_INV_CURR_OVER_2);
             LREP("start protect OCL timer on zone 3\r\n");
-            Timer_StartAt(pApp->hTimerProtect, Inverter_OCL_Wait_Time);
+            Timer_StartAt(pApp->hTimerProtectOverCurrent, Inverter_OCL_Wait_Time);
         }
 
     } else if((pApp->inverterCurr.realValue >= pApp->maxInverterCurr +
             _IQ18(Inverter_Current_Offset)) &&
             pApp->inverterCurr.realValue < pApp->maxInverterCurr2) {
         // 4. if not protect -> start protect 1
-        if(!Timer_IsRunning(pApp->hTimerProtect)) {
+        if(!Timer_IsRunning(pApp->hTimerProtectOverCurrent)) {
             App_SetDevState(pApp, DS_INV_CURR_OVER_1);
             App_ClearDevState(pApp, DS_INV_CURR_OVER_2);
-            Timer_StartAt(pApp->hTimerProtect, Inverter_OCL_Wait_Time);
+            Timer_StartAt(pApp->hTimerProtectOverCurrent, Inverter_OCL_Wait_Time);
             LREP("start protect OCL timer on zone 4\r\n");
         } else { // else keep prev state
 
@@ -525,7 +525,7 @@ void App_Control(SApp *pApp) {
         if(pApp->eDevState != (DS_RUN_UPS | DS_INV_CURR_OVER_2)) {
             App_ClearDevState(pApp, DS_INV_CURR_OVER_1);
             App_SetDevState(pApp, DS_INV_CURR_OVER_2);
-            Timer_StartAt(pApp->hTimerProtect, Inverter_OCS_Wait_Time);
+            Timer_StartAt(pApp->hTimerProtectOverCurrent, Inverter_OCS_Wait_Time);
             LREP("start protect OCS timer \r\n");
         }
 
@@ -601,7 +601,7 @@ void App_Control(SApp *pApp) {
            pApp->eDevState == (DS_RUN_UPS | DS_INV_CURR_OVER_2)) {
 
             // update inverter sine value factor
-            if(pApp->lastBoostVolt != pApp->boostVolt.realValue) {
+            if(pApp->lastBoostVolt != pApp->boostVolt.realValue && pApp->numTripOccurs == 0) {
 
                 _iq gain = _IQdiv(pApp->sInverter.bCoeff - pApp->boostVolt.realValue,
                                   pApp->sInverter.aCoeff);

@@ -3,7 +3,8 @@
 /***************************** Include Files *********************************/
 #include <console.h>
 #include <string.h>
-#include "AppConfig.h"
+#include <strings.h>
+#include <BSP.h>
 
 /************************** Constant Definitions *****************************/
 
@@ -35,14 +36,8 @@ char shell_cmdline[SHELL_CMDLINE_SIZE];
 
 void Debug_Init(uint32_t uart_port_idx)
 {
-    SciaRegs.SCICCR.all =0x0007;
-
-    //
-    // enable TX, RX, internal SCICLK, Disable RX ERR, SLEEP, TXWAKE
-    //
-
-	debug_port = uart_port_idx;
-
+    (void)uart_port_idx;
+    UART_Init();
 	LREP("\r\n\r\nconsole setup done\r\n");
 }
 
@@ -57,8 +52,11 @@ void Debug_Init(uint32_t uart_port_idx)
 
 void Debug_RX_ISRHandler(void)
 {
-	//putchar1((uint8_t)XMC_UART_CH_GetReceivedData(UART[debug_port]));
-	//PushCommand((uint8_t)XMC_UART_CH_GetReceivedData(UART[debug_port]));
+    while(SciaRegs.SCIRXST.bit.RXRDY == 1)     // is TXBUF empty ?, i.e. TXRDY = 1
+    {
+        putchar1((uint8_t)SciaRegs.SCIRXBUF.all);
+        PushCommand((uint8_t)SciaRegs.SCIRXBUF.all);
+    }
 }
 
 /*****************************************************************************/
@@ -152,7 +150,7 @@ BOOL PushCommand(uint8_t ch)
 
 void PopCommand(uint8_t*    pu8Command)
 {
-
+    (void)pu8Command;
 }
 
 
@@ -197,7 +195,7 @@ void shell_exec(void)
 		const shell_command_t *cur_command = shell_cmd_table;
 		while (cur_command->name)
 		{
-			if (strcasecmp(cur_command->name, argv[0]) == 0) /* Command is found. */
+			if (strcasecmp((const char*)cur_command->name, (const char*)argv[0]) == 0) /* Command is found. */
 			{
 				if (((argc - 1u) >= cur_command->min_args) && ((argc - 1u) <= cur_command->max_args))
 				{

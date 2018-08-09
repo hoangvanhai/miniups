@@ -75,39 +75,39 @@ void ADC_SocConfig(int ChSel[], int Trigsel[],
 
 
 
-#define GPIO_TOGGLE_DRV_EN1()       GpioDataRegs.GPATOGGLE.bit.GPIO7 = 1
-#define GPIO_SET_HIGH_DRV_EN1()     GpioDataRegs.GPASET.bit.GPIO7 = 1
-#define GPIO_SET_LOW_DRV_EN1()      GpioDataRegs.GPACLEAR.bit.GPIO7 = 1
+//#define GPIO_TOGGLE_DRV_EN1()       GpioDataRegs.GPATOGGLE.bit.GPIO7 = 1
+//#define GPIO_SET_HIGH_DRV_EN1()     GpioDataRegs.GPASET.bit.GPIO7 = 1
+//#define GPIO_SET_LOW_DRV_EN1()      GpioDataRegs.GPACLEAR.bit.GPIO7 = 1
+//
+//#define GPIO_TOGGLE_DRV_EN2()       GpioDataRegs.GPATOGGLE.bit.GPIO29 = 1
+//#define GPIO_SET_HIGH_DRV_EN2()     GpioDataRegs.GPASET.bit.GPIO29 = 1
+//#define GPIO_SET_LOW_DRV_EN2()      GpioDataRegs.GPACLEAR.bit.GPIO29 = 1
 
-#define GPIO_TOGGLE_DRV_EN2()       GpioDataRegs.GPATOGGLE.bit.GPIO29 = 1
-#define GPIO_SET_HIGH_DRV_EN2()     GpioDataRegs.GPASET.bit.GPIO29 = 1
-#define GPIO_SET_LOW_DRV_EN2()      GpioDataRegs.GPACLEAR.bit.GPIO29 = 1
 
-
-#define GPIO_TOGGLE_FAN_ON()        GpioDataRegs.GPATOGGLE.bit.GPIO5 = 1
-#define GPIO_SET_HIGH_FAN_ON()      GpioDataRegs.GPASET.bit.GPIO5 = 1
-#define GPIO_SET_LOW_FAN_ON()       GpioDataRegs.GPACLEAR.bit.GPIO5 = 1
+#define GPIO_TOGGLE_FAN_ON()        GpioDataRegs.GPATOGGLE.bit.GPIO29 = 1
+#define GPIO_SET_HIGH_FAN_ON()      GpioDataRegs.GPASET.bit.GPIO29 = 1
+#define GPIO_SET_LOW_FAN_ON()       GpioDataRegs.GPACLEAR.bit.GPIO29 = 1
 
 #define GPIO_TOGGLE_RUN()           GpioDataRegs.GPBTOGGLE.bit.GPIO33 = 1
 #define GPIO_SET_HIGH_RUN()         GpioDataRegs.GPBSET.bit.GPIO33 = 1
 #define GPIO_SET_LOW_RUN()          GpioDataRegs.GPBCLEAR.bit.GPIO33 = 1
 
 
-#define GPIO_TOGGLE_CTRL_RELAY()        GpioDataRegs.GPBTOGGLE.bit.GPIO32
-#define GPIO_SET_HIGH_CTRL_RELAY()      GpioDataRegs.GPBSET.bit.GPIO32
-#define GPIO_SET_LOW_CTRL_RELAY()       GpioDataRegs.GPBCLEAR.bit.GPIO32
+#define GPIO_TOGGLE_CTRL_RELAY()        GpioDataRegs.GPBTOGGLE.bit.GPIO32 = 1
+#define GPIO_SET_HIGH_CTRL_RELAY()      GpioDataRegs.GPBSET.bit.GPIO32  = 1
+#define GPIO_SET_LOW_CTRL_RELAY()       GpioDataRegs.GPBCLEAR.bit.GPIO32  = 1
 
-#define GPIO_TOGGLE_DISP_ACIN()         GpioDataRegs.GPATOGGLE.bit.GPIO16
-#define GPIO_SET_HIGH_DISP_ACIN()       GpioDataRegs.GPASET.bit.GPIO16
-#define GPIO_SET_LOW_DISP_ACIN()        GpioDataRegs.GPACLEAR.bit.GPIO16
+#define GPIO_TOGGLE_DISP_ACIN()         GpioDataRegs.GPATOGGLE.bit.GPIO16  = 1
+#define GPIO_SET_HIGH_DISP_ACIN()       GpioDataRegs.GPASET.bit.GPIO16  = 1
+#define GPIO_SET_LOW_DISP_ACIN()        GpioDataRegs.GPACLEAR.bit.GPIO16  = 1
 
-#define GPIO_TOGGLE_DISP_UPS_RUN()      GpioDataRegs.GPATOGGLE.bit.GPIO17
-#define GPIO_SET_HIGH_DISP_UPS_RUN()    GpioDataRegs.GPASET.bit.GPIO17
-#define GPIO_SET_LOW_DISP_UPS_RUN()     GpioDataRegs.GPACLEAR.bit.GPIO17
+#define GPIO_TOGGLE_DISP_UPS_RUN()      GpioDataRegs.GPATOGGLE.bit.GPIO17  = 1
+#define GPIO_SET_HIGH_DISP_UPS_RUN()    GpioDataRegs.GPASET.bit.GPIO17  = 1
+#define GPIO_SET_LOW_DISP_UPS_RUN()     GpioDataRegs.GPACLEAR.bit.GPIO17  = 1
 
-#define GPIO_TOGGLE_DISP_BATT_LOW()     GpioDataRegs.GPATOGGLE.bit.GPIO19
-#define GPIO_SET_HIGH_DISP_BATT_LOW()   GpioDataRegs.GPASET.bit.GPIO19
-#define GPIO_SET_LOW_DISP_BATT_LOW()    GpioDataRegs.GPACLEAR.bit.GPIO19
+#define GPIO_TOGGLE_DISP_BATT_LOW()     GpioDataRegs.GPATOGGLE.bit.GPIO19  = 1
+#define GPIO_SET_HIGH_DISP_BATT_LOW()   GpioDataRegs.GPASET.bit.GPIO19  = 1
+#define GPIO_SET_LOW_DISP_BATT_LOW()    GpioDataRegs.GPACLEAR.bit.GPIO19  = 1
 
 
 

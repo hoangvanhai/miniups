@@ -74,7 +74,21 @@ void main(void)
     BSP_Start();
 
     while(1) {
-        DELAY_US(50000);
+        //DELAY_US(50000);
+        DELAY_US(15000);
+
+        if(EPwm1Regs.TZFLG.bit.INT == 1) {
+            EALLOW;
+            EPwm1Regs.TZCLR.bit.INT = 1;
+            EDIS;
+        }
+
+//        GPIO_TOGGLE_DISP_BATT_LOW();
+//        GPIO_TOGGLE_DISP_UPS_RUN();
+//        GPIO_TOGGLE_DISP_ACIN();
+//        GPIO_TOGGLE_CTRL_RELAY();
+//        GPIO_TOGGLE_FAN_ON();
+
         //ServiceDog();
 //        LREP("adc: %d voltage: %d - gain: 0.%d\r\n", (long)AdcResult.ADCRESULT1, _IQ18int(sApp.boostVolt.realValue),
 //             _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)));
@@ -89,12 +103,13 @@ void main(void)
 //        LREP("ADC: %d - V: %d\r\n", (long)AdcResult.ADCRESULT1,
 //             _IQ18int(sApp.boostVolt.realValue));
 
-        LREP("C: 0.%d - V: %d - G: 0.%d STAT: 0x%x\r\n",
-             _IQ18int(_IQ18mpy(sApp.inverterCurr.realValue, _IQ18(10))),
-             _IQ18int(sApp.boostVolt.realValue),
-             _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)),
-             (long)sApp.eDevState);
+//        LREP("C: 0.%d - V: %d - G: 0.%d STAT: 0x%x\r\n",
+//             _IQ18int(_IQ18mpy(sApp.inverterCurr.realValue, _IQ18(10))),
+//             _IQ18int(sApp.boostVolt.realValue),
+//             _IQ20int(_IQ20mpyIQX(sApp.sInverter.sSine1Phase.gain, 24, _IQ20(1000), 20)),
+//             (long)sApp.eDevState);
 
+        LREP(".");
 //        LREP("TZSEL: %x - TZDCSEL: %x - TZCTL: %x - TZEINT: %x - TZFLG: %x - TZCLR: %x - TZFRC: %x\r\n",
 //             (long)EPwm1Regs.TZSEL.all, (long)EPwm1Regs.TZDCSEL.all, (long)EPwm1Regs.TZCTL.all,
 //             (long)EPwm1Regs.TZEINT.all, (long)EPwm1Regs.TZFLG.all, (long)EPwm1Regs.TZCLR.all, (long)EPwm1Regs.TZFRC.all);

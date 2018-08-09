@@ -102,7 +102,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="Console/console.c|Lib/dispatcher.c|F2802x_generic_ram.cmd|F28020.cmd|Hardware/common/source/f2802x_usdelay.asm" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="Lib/dispatcher.c|F2802x_generic_ram.cmd|F28020.cmd|Hardware/common/source/f2802x_usdelay.asm" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

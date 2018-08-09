@@ -9,8 +9,8 @@
 
 /************************** Constant Definitions *****************************/
 #define SHELL_PROMPT "SHELL> "
-#define SHELL_CMDLINE_SIZE 256
-#define SHELL_ARGS_MAX 16
+#define SHELL_CMDLINE_SIZE      256
+#define SHELL_ARGS_MAX          16
 
 #define SHELL_ERR_SYNTAX   ("Error: Invalid syntax for: %s\r\n")
 #define SHELL_ERR_CMD      ("Error: No such command: %s\r\n")

@@ -71,7 +71,7 @@ void BSP_Init(void) {
 #ifndef TEST_INV_PWM_SETTING
     TIMER_Cpu1_Init(TIMER_BASE / App_Control_Freq);
 #endif
-    TIMER_Cpu2_Init(TIMER2_PERIOD);
+    //TIMER_Cpu2_Init(TIMER_BASE / Inverter_GenSin_Freq);
 
     ADC_Init();
 
@@ -783,8 +783,12 @@ EPwmRet PWM_2ChCntUpDownFullCfg(struct EPWM_REGS *pwm, uint32_t freq, int16_t mo
      pwm->AQCTLA.bit.CAU = AQ_CLEAR;
      pwm->AQCTLA.bit.CAD = AQ_SET;
 
-     pwm->AQCTLB.bit.CBU = AQ_CLEAR;
-     pwm->AQCTLB.bit.CBD = AQ_SET;
+//     pwm->AQCTLB.bit.CBU = AQ_CLEAR;
+//     pwm->AQCTLB.bit.CBD = AQ_SET;
+
+     pwm->AQCTLB.bit.CAU = AQ_SET;
+     pwm->AQCTLB.bit.CAD = AQ_CLEAR;
+
 
      // Action Qualifier SubModule Registers
      pwm->DBCTL.bit.OUT_MODE = DB_FULL_ENABLE; //Enable Dead-band module
@@ -1065,7 +1069,7 @@ EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm) {
     pwm->TZSEL.bit.DCAEVT2          = 1;
 
     pwm->TZEINT.bit.DCAEVT2         = 1;
-    //pwm->TZEINT.bit.CBC             = 1;
+    pwm->TZEINT.bit.CBC             = 1;
 
     EDIS;
 
