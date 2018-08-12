@@ -1,10 +1,25 @@
-/*
- * isr.c
+/** @FILE NAME:    isr.c
+ *  @DESCRIPTION:  This file for ...
  *
- *  Created on: Jul 16, 2018
- *      Author: PC
- */
-
+ *  Copyright (c) 2018 EES Ltd.
+ *  All Rights Reserved This program is the confidential and proprietary
+ *  product of EES Ltd. Any Unauthorized use, reproduction or transfer
+ *  of this program is strictly prohibited.
+ *
+ *  @Author: HaiHoang
+ *  @NOTE:   No Note at the moment
+ *  @BUG:    No known bugs.
+ *
+ *<pre>
+ *  MODIFICATION HISTORY:
+ *
+ *  Ver   Who       Date                Changes
+ *  ----- --------- ------------------  ----------------------------------------
+ *  1.00  HaiHoang  August 1, 2018      First release
+ *
+ *
+ *</pre>
+ ******************************************************************************/
 
 
 
@@ -72,6 +87,15 @@ __interrupt void epwm2_isr(void)
 
 __interrupt void epwm3_isr(void)
 {
+    static uint16_t counter = 0;
+
+    if(counter++ >= 4) {
+        counter = 0;
+        if(sApp.eDevState == DS_RUN_UPS) {
+            //Boost_Process(&sApp.sBooster, sApp.boostVolt.realValue);
+        }
+        GPIO_TOGGLE_DISP_BATT_LOW();
+    }
 
     EPwm3Regs.ETCLR.bit.INT = 1;
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
@@ -106,11 +130,6 @@ __interrupt void epwm4_isr(void)
 __interrupt void epwm1_tzint_isr(void)
 {
     LREP("Trip Zone 1\r\n");
-
-//    EPwm1Regs.TZCLR.bit.INT     = 1;
-//    EPwm1Regs.TZCLR.bit.DCAEVT2 = 1;
-//    EPwm1Regs.TZCLR.bit.CBC     = 1;
-
     /**
      * because use EPwmxRegs.TZCLR.bit.INT; cause other interrupt do not work properly
      * so not recommend use the statement frequently
@@ -118,7 +137,6 @@ __interrupt void epwm1_tzint_isr(void)
 
     EALLOW;
     EPwm1Regs.TZCLR.bit.CBC     = 1;
-    EPwm1Regs.TZCLR.bit.OST     = 1;
     //EPwm1Regs.TZCLR.bit.INT     = 1;
     EPwm1Regs.TZCLR.bit.DCAEVT2 = 1;
     EDIS;
@@ -166,6 +184,59 @@ __interrupt void epwm2_tzint_isr(void)
  *  @return Void.
  *  @note
  */
+__interrupt void epwm3_tzint_isr(void)
+{
+    LREP("Trip Zone 3\r\n");
+    /**
+     * because use EPwmxRegs.TZCLR.bit.INT; cause other interrupt do not work properly
+     * so not recommend use the statement frequently
+     */
+
+    EALLOW;
+    EPwm3Regs.TZCLR.bit.CBC     = 1;
+    //EPwm3Regs.TZCLR.bit.INT     = 1;
+    EPwm3Regs.TZCLR.bit.DCAEVT2 = 1;
+    EDIS;
+
+
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP2;
+}
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+__interrupt void epwm4_tzint_isr(void)
+{
+    LREP("Trip Zone 4\r\n");
+    /**
+     * because use EPwmxRegs.TZCLR.bit.INT; cause other interrupt do not work properly
+     * so not recommend use the statement frequently
+     */
+
+    EALLOW;
+    EPwm4Regs.TZCLR.bit.CBC     = 1;
+    EPwm4Regs.TZCLR.bit.INT     = 1;
+    EPwm4Regs.TZCLR.bit.DCAEVT2 = 1;
+    EDIS;
+
+
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP2;
+
+
+}
+
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
 __interrupt void cpu_timer0_isr(void)
 {
     CpuTimer0.InterruptCount++;
@@ -202,25 +273,6 @@ __interrupt void cpu_timer1_isr(void)
 __interrupt void cpu_timer2_isr(void)
 {
     CpuTimer2.InterruptCount++;
-    //LREP("T2");
-//    if(sApp.eDevState == DS_RUN_UPS) {
-//        Boost_Process(&sApp.sBooster, sApp.boostVolt.realValue);
-//    }
-
-//    GPIO_TOGGLE_DISP_BATT_LOW();
-//
-//    if(sApp.sInverter.eState == INV_RUNNING) {
-//
-//        Sin_GenValueM(&sApp.sInverter.sSine1Phase);
-//
-//        sApp.sInverter.pwm1Handle->CMPA.half.CMPA =
-//                _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmA,
-//                         sApp.sInverter.pwm1Handle->TBPRD>>1);
-//
-//        sApp.sInverter.pwm2Handle->CMPA.half.CMPA =
-//                _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmB,
-//                         sApp.sInverter.pwm2Handle->TBPRD>>1);
-//    }
 }
 
 /*****************************************************************************/

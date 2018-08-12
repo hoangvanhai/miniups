@@ -1,9 +1,25 @@
-/*
- * pid.c
+/** @FILE NAME:    pid.c
+ *  @DESCRIPTION:  This file for ...
  *
- *  Created on: Jul 31, 2018
- *      Author: PC
- */
+ *  Copyright (c) 2018 EES Ltd.
+ *  All Rights Reserved This program is the confidential and proprietary
+ *  product of EES Ltd. Any Unauthorized use, reproduction or transfer
+ *  of this program is strictly prohibited.
+ *
+ *  @Author: HaiHoang
+ *  @NOTE:   No Note at the moment
+ *  @BUG:    No known bugs.
+ *
+ *<pre>
+ *  MODIFICATION HISTORY:
+ *
+ *  Ver   Who       Date                Changes
+ *  ----- --------- ------------------  ----------------------------------------
+ *  1.00  HaiHoang  August 1, 2018      First release
+ *
+ *
+ *</pre>
+ ******************************************************************************/
 
 /***************************** Include Files *********************************/
 #include <pid.h>
@@ -31,8 +47,8 @@
 void PID_Init(SPID *pPid, _iq Kp, _iq Ki, _iq Kd, _iq T) {
     PID_Reset(pPid);
     pPid->KP = Kp;
-    pPid->KI = _IQmpy(Ki, _IQdiv(T, _IQ(2)));
-    pPid->KD = _IQdiv(Kd, T);
+    pPid->KI = _IQ24mpy(Ki, _IQ24div(T, _IQ(2)));
+    pPid->KD = _IQ24div(Kd, T);
 }
 /*****************************************************************************/
 /** @brief
@@ -62,9 +78,9 @@ void PID_Init(SPID *pPid, _iq Kp, _iq Ki, _iq Kd, _iq T) {
 
 void PID_Process(SPID *pPid, _iq setPoint, _iq feedBack)     {
     (pPid)->currErr       = setPoint - feedBack;
-    (pPid)->Proportional  = _IQmpy((pPid)->KP, (pPid)->currErr);
-    (pPid)->Integration  += _IQmpy((pPid)->KI, (pPid)->currErr + (pPid)->prevErr);
-    (pPid)->Derative      = _IQmpy((pPid)->KD, (pPid)->currErr - (pPid)->prevErr);
+    (pPid)->Proportional  = _IQ24mpy((pPid)->KP, (pPid)->currErr);
+    (pPid)->Integration  += _IQ24mpy((pPid)->KI, (pPid)->currErr + (pPid)->prevErr);
+    (pPid)->Derative      = _IQ24mpy((pPid)->KD, (pPid)->currErr - (pPid)->prevErr);
     (pPid)->prevErr       = (pPid)->currErr;
     (pPid)->PIDOut        = (pPid)->Proportional + (pPid)->Integration + (pPid)->Derative;
 }

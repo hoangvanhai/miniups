@@ -1,10 +1,25 @@
-/*
- * pid.h
+/** @FILE NAME:    pid.h
+ *  @DESCRIPTION:  This file for ...
  *
- *  Created on: Jul 31, 2018
- *      Author: PC
- */
-
+ *  Copyright (c) 2018 EES Ltd.
+ *  All Rights Reserved This program is the confidential and proprietary
+ *  product of EES Ltd. Any Unauthorized use, reproduction or transfer
+ *  of this program is strictly prohibited.
+ *
+ *  @Author: HaiHoang
+ *  @NOTE:   No Note at the moment
+ *  @BUG:    No known bugs.
+ *
+ *<pre>
+ *  MODIFICATION HISTORY:
+ *
+ *  Ver   Who       Date                Changes
+ *  ----- --------- ------------------  ----------------------------------------
+ *  1.00  HaiHoang  August 1, 2018      First release
+ *
+ *
+ *</pre>
+ ******************************************************************************/
 #ifndef APPLICATION_PIDCTRL_PID_H_
 #define APPLICATION_PIDCTRL_PID_H_
 
@@ -32,18 +47,18 @@ typedef struct SPID_ {
 #define PID_Reset(pid) {                        \
                         pid->currErr = 0;       \
                         pid->prevErr = 0;       \
-                        pid->Integration = 0;  \
+                        pid->Integration = 0;   \
                         pid->Derative = 0;      \
                         pid->Proportional = 0;  \
                         pid->PIDOut = 0;        \
                       }
 
 
-#define PID_ProcessM(pPid, setPoint, feedBack)                   {   \
-    (pPid)->currErr       = setPoint - feedBack;                    \
-    (pPid)->Proportional  = _IQmpy((pPid)->KP, (pPid)->currErr);    \
-    (pPid)->Integration  += _IQmpy((pPid)->KI, (pPid)->currErr + (pPid)->prevErr); \
-    (pPid)->Derative      = _IQmpy((pPid)->KD, (pPid)->currErr - (pPid)->prevErr); \
+#define PID_ProcessM(pPid, setPoint, feedBack)                   {                      \
+    (pPid)->currErr       = setPoint - feedBack;                                        \
+    (pPid)->Proportional  = _IQ24mpy((pPid)->KP, (pPid)->currErr);                      \
+    (pPid)->Integration  += _IQ24mpy((pPid)->KI, (pPid)->currErr + (pPid)->prevErr);    \
+    (pPid)->Derative      = _IQ24mpy((pPid)->KD, (pPid)->currErr - (pPid)->prevErr);    \
     (pPid)->prevErr       = (pPid)->currErr;                        \
     (pPid)->PIDOut        = (pPid)->Proportional + (pPid)->Integration + (pPid)->Derative; \
 }

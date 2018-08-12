@@ -1,9 +1,25 @@
-/*
- * BSP.h
+/** @FILE NAME:    BSP.h
+ *  @DESCRIPTION:  This file for ...
  *
- *  Created on: Jul 9, 2018
- *      Author: MSI
- */
+ *  Copyright (c) 2018 EES Ltd.
+ *  All Rights Reserved This program is the confidential and proprietary
+ *  product of EES Ltd. Any Unauthorized use, reproduction or transfer
+ *  of this program is strictly prohibited.
+ *
+ *  @Author: HaiHoang
+ *  @NOTE:   No Note at the moment
+ *  @BUG:    No known bugs.
+ *
+ *<pre>
+ *  MODIFICATION HISTORY:
+ *
+ *  Ver   Who       Date                Changes
+ *  ----- --------- ------------------  ----------------------------------------
+ *  1.00  HaiHoang  August 1, 2018      First release
+ *
+ *
+ *</pre>
+ ******************************************************************************/
 
 #ifndef APPLICATION_BSP_H_
 #define APPLICATION_BSP_H_
@@ -67,8 +83,10 @@ EPwmRet PWM_2ChCntUpDownFullCfg(struct EPWM_REGS *pwm, uint32_t freq, int16_t mo
 EPwmRet PWM_2ChCntUpSetDutyFull(struct EPWM_REGS* pwm, uint16_t channel,
                                 uint16_t CMPA, uint16_t CMPB, uint16_t updateAQ);
 
-EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm);
-void COMP_ModuleConfig(struct COMP_REGS* cmp, uint16_t value);
+EPwmRet PWM_InverterConfigTripZone(struct EPWM_REGS *pwm);
+EPwmRet PWM_BoosterConfigTripZone(struct EPWM_REGS *pwm);
+void COMP_InverterTripZoneConfig(struct COMP_REGS* cmp, uint16_t value);
+void COMP_BoosterTripZoneConfig(struct COMP_REGS* cmp, uint16_t value);
 
 void ADC_SocConfig(int ChSel[], int Trigsel[],
                    int ACQPS[], int IntChSel, int mode);

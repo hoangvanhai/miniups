@@ -3,7 +3,7 @@
  *
  *  Copyright (c) 2018 EES Ltd.
  *  All Rights Reserved This program is the confidential and proprietary
- *  product of ViettelR&D. Any Unauthorized use, reproduction or transfer
+ *  product of EES Ltd. Any Unauthorized use, reproduction or transfer
  *  of this program is strictly prohibited.
  *
  *  @Author: HaiHoang
@@ -22,7 +22,7 @@
  ******************************************************************************/
 
 /***************************** Include Files *********************************/
-#include "booster.h"
+#include <booster.h>
 #include <BSP.h>
 #include <utils.h>
 
@@ -36,6 +36,8 @@
 /************************** Function Prototypes ******************************/
 extern __interrupt void epwm3_isr(void);
 extern __interrupt void epwm4_isr(void);
+extern __interrupt void epwm3_tzint_isr(void);
+extern __interrupt void epwm4_tzint_isr(void);
 /************************** Variable Definitions *****************************/
 
 /*****************************************************************************/
@@ -48,9 +50,9 @@ extern __interrupt void epwm4_isr(void);
  */
 BRet Boost_Init(SBooster *pBst) {
     pBst->eState        = BS_IDLE;
-    pBst->freq          = Boost_SW_Freq;
-    pBst->period        = Boost_SW_Period;
-    pBst->periodIQ      = _IQ18(pBst->period);
+    pBst->freq          = Boost_Pwm_Freq;
+    pBst->period        = (uint16_t)(FTBCLK / Boost_Pwm_Freq);
+    pBst->periodIQ      = _IQ18(pBst->period / 2);
     pBst->dutyv         = 0;
     pBst->dutyMax       = _IQ18div(_IQ(Boost_Duty_Coeff), _IQ(2));
     pBst->setVolt       = _IQ18(Boost_Volt_Output);
@@ -62,9 +64,11 @@ BRet Boost_Init(SBooster *pBst) {
 #endif
     pBst->pwmAHandle    = (PWM_REGS *)&EPwm3Regs;   //(PWM_REGS *)&EPwm1Regs;
     pBst->pwmBHandle    = (PWM_REGS *)&EPwm4Regs;   //(PWM_REGS *)&EPwm2Regs;
-    pBst->phaseDiff     = Boost_SW_Period / 2;
+    pBst->phaseDiff     = 0;
 
     PWM_Boost_Init(pBst->pwmAHandle, pBst->pwmBHandle, pBst->freq, pBst->phaseDiff);
+
+    Boost_Set(pBst, _IQ24(0.1));
     return BR_OK;
 }
 
@@ -98,16 +102,31 @@ BRet Boost_Apply(SBooster *pBst) {
  */
 void PWM_Boost_Init(PWM_REGS *pwmA, PWM_REGS *pwmB, uint32_t freq, uint16_t phase) {
 
+    (void)phase;
     EALLOW;
-    GpioCtrlRegs.GPAPUD.bit.GPIO4 = 1;    // Disable pull-up on GPIO4 (EPWM3A)
-    GpioCtrlRegs.GPAMUX1.bit.GPIO4 = 1;   // Configure GPIO4 as EPWM3A
+
+    GpioCtrlRegs.GPAMUX1.bit.GPIO4 = 0;     // 0=GPIO,  1=EPWM4B,  2=SCIRX-A,  3=Resv
+    GpioCtrlRegs.GPADIR.bit.GPIO4 = 1;      // 1=OUTput,  0=INput
+    GpioDataRegs.GPACLEAR.bit.GPIO4 = 1;    // uncomment if --> Set Low initially
+    //GpioDataRegs.GPASET.bit.GPIO7 = 1;      // uncomment if --> Set High initially
+
+
+    GpioCtrlRegs.GPAMUX1.bit.GPIO6 = 0;     // 0=GPIO,  1=EPWM3B,  2=Resv,  3=ECAP1
+    GpioCtrlRegs.GPADIR.bit.GPIO6 = 1;      // 1=OUTput,  0=INput
+    GpioDataRegs.GPACLEAR.bit.GPIO6 = 1;    // uncomment if --> Set Low initially
+    //GpioDataRegs.GPASET.bit.GPIO5 = 1;      // uncomment if --> Set High initially
+
+
+
+//    GpioCtrlRegs.GPAPUD.bit.GPIO4 = 1;    // Disable pull-up on GPIO4 (EPWM3A)
+//    GpioCtrlRegs.GPAMUX1.bit.GPIO4 = 1;   // Configure GPIO4 as EPWM3A
 
     GpioCtrlRegs.GPAPUD.bit.GPIO5 = 1;    // Disable pull-up on GPIO5 (EPWM3B)
     GpioCtrlRegs.GPAMUX1.bit.GPIO5 = 1;   // Configure GPIO5 as EPWM3B
 
 
-    GpioCtrlRegs.GPAPUD.bit.GPIO6 = 1;    // Disable pull-up on GPIO6 (EPWM4A)
-    GpioCtrlRegs.GPAMUX1.bit.GPIO6 = 1;   // Configure GPIO6 as EPWM4A
+//    GpioCtrlRegs.GPAPUD.bit.GPIO6 = 1;    // Disable pull-up on GPIO6 (EPWM4A)
+//    GpioCtrlRegs.GPAMUX1.bit.GPIO6 = 1;   // Configure GPIO6 as EPWM4A
 
     GpioCtrlRegs.GPAPUD.bit.GPIO7 = 1;    // Disable pull-up on GPIO6 (EPWM4B)
     GpioCtrlRegs.GPAMUX1.bit.GPIO7 = 1;   // Configure GPIO6 as EPWM4A
@@ -121,6 +140,30 @@ void PWM_Boost_Init(PWM_REGS *pwmA, PWM_REGS *pwmB, uint32_t freq, uint16_t phas
     PWM_2ChCntUpDownBoostCfg(pwmA, freq, 0, 0, 1);   // PWM1 Inverter is setting as master,
                                                      // all others must set as slave
     PWM_2ChCntUpDownBoostCfg(pwmB, freq, 0, 0, 2);   // PWM1 Inverter is setting as master,
+
+    COMP_BoosterTripZoneConfig((struct COMP_REGS*)&Comp2Regs, 400);
+
+    PWM_BoosterConfigTripZone(pwmA);
+    PWM_BoosterConfigTripZone(pwmB);
+
+    EALLOW;
+    pwmA->ETSEL.bit.INTEN = 1;              // Enable INT
+    pwmA->ETPS.bit.INTPRD = ET_2ND;
+    pwmA->ETSEL.bit.INTSEL = ET_CTR_ZERO;
+    EDIS;
+
+    PieCtrlRegs.PIEIER2.bit.INTx3   = 1;    // epwm3 TZ interrupt
+    PieCtrlRegs.PIEIER3.bit.INTx3 = 1;      // epwm3 interrupt
+
+    EALLOW;            // This is needed to write to EALLOW protected registers
+
+    PieVectTable.EPWM3_TZINT        = &epwm3_tzint_isr;
+    PieVectTable.EPWM3_INT          = &epwm3_isr;
+
+    EDIS;               // This is needed to disable write to EALLOW protected registers
+
+    IER |= M_INT2;
+    IER |= M_INT3;
 
     EALLOW;
     SysCtrlRegs.PCLKCR0.bit.TBCLKSYNC = 1;
@@ -160,7 +203,7 @@ BRet Boost_Stop(SBooster *pBst) {
  *  @note
  */
 BRet Boost_Set(SBooster *pBst, _iq percen) {
-    pBst->dutyv = _IQint(_IQmpy(percen, pBst->periodIQ));
+    pBst->dutyv = _IQ18int(_IQ18mpyIQX(percen, 24, pBst->periodIQ, 18));
     return Boost_Apply(pBst);
 }
 

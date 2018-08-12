@@ -6,7 +6,7 @@
  *
  *  Copyright (c) 2018 EES Ltd.
  *  All Rights Reserved This program is the confidential and proprietary
- *  product of ViettelR&D. Any Unauthorized use, reproduction or transfer
+ *  product of EES Ltd. Any Unauthorized use, reproduction or transfer
  *  of this program is strictly prohibited.
  *
  *  @Author: HaiHoang

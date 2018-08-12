@@ -1,14 +1,28 @@
-/*
- * inverter.c
+/** @FILE NAME:    inverter.c
+ *  @DESCRIPTION:  This file for ...
  *
- *  Created on: Jul 17, 2018
- *      Author: PC
- */
-
-
+ *  Copyright (c) 2018 EES Ltd.
+ *  All Rights Reserved This program is the confidential and proprietary
+ *  product of EES Ltd. Any Unauthorized use, reproduction or transfer
+ *  of this program is strictly prohibited.
+ *
+ *  @Author: HaiHoang
+ *  @NOTE:   No Note at the moment
+ *  @BUG:    No known bugs.
+ *
+ *<pre>
+ *  MODIFICATION HISTORY:
+ *
+ *  Ver   Who       Date                Changes
+ *  ----- --------- ------------------  ----------------------------------------
+ *  1.00  HaiHoang  August 1, 2018      First release
+ *
+ *
+ *</pre>
+ ******************************************************************************/
 
 /***************************** Include Files *********************************/
-#include "inverter.h"
+#include <inverter.h>
 #include <SineGen.h>
 
 /************************** Constant Definitions *****************************/
@@ -48,14 +62,15 @@ void Inv_Init(SInverter *pInv) {
              _IQ24(Inverter_Start_Mf), _IQ24(1.0));
 
 
-//    Sin_Init(&pInv->sSine1Phase, Inverter_Sin_Freq,
-//             Inverter_Pwm_Freq,
-//             _IQ24((Inverter_Sin_Freq * 2 * PI) / Inverter_GenSin_Freq),
-//             _IQ24(Inverter_Start_Mf), _IQ24(1.0));
+    /*Sin_Init(&pInv->sSine1Phase, Inverter_Sin_Freq,
+             Inverter_Pwm_Freq,
+             _IQ24((Inverter_Sin_Freq * 2 * PI) / Inverter_GenSin_Freq),
+             _IQ24(Inverter_Start_Mf), _IQ24(1.0)); */
 
 
     pInv->gainStep       = _IQ24(Inverter_Step_Mf);         // set gain step is 0.01
     pInv->gainMax        = _IQ24(Inverter_Max_Mf);
+    pInv->currGain       = 0;
     pInv->aCoeff         = _IQ18(A_COEFF);
     pInv->bCoeff         = _IQ18(B_COEFF);
     pInv->currFbFact     = _IQ24(Inverter_Feedback_Curr_Rat);
@@ -140,31 +155,26 @@ void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq) {
     PWM_2ChCntUpDownFullCfg(pwm2, freq, 0, 0);
 
 
-    COMP_ModuleConfig((struct COMP_REGS*)&Comp1Regs,
+    COMP_InverterTripZoneConfig((struct COMP_REGS*)&Comp1Regs,
                       _IQ18int(_IQ18(1023 * Inverter_SC_Protect_Value *
                       Adc_Inverter_Shunt_Volt_Rat / Adc_Reference_Volt)));
 
-    PWM_ModuleConfigTripZone(pwm1);
-    PWM_ModuleConfigTripZone(pwm2);
+    PWM_InverterConfigTripZone(pwm1);
+    PWM_InverterConfigTripZone(pwm2);
 
 
     // Enable EPWM INTn in the PIE: Group 2 interrupt 1-3
 
     PieCtrlRegs.PIEIER2.bit.INTx1   = 1;
-    PieCtrlRegs.PIEIER2.bit.INTx2   = 1;
+    //PieCtrlRegs.PIEIER2.bit.INTx2   = 1;
 
     EALLOW;            // This is needed to write to EALLOW protected registers
 
 
     PieVectTable.EPWM1_TZINT        = &epwm1_tzint_isr;
-    PieVectTable.EPWM2_TZINT        = &epwm2_tzint_isr;
+    //PieVectTable.EPWM2_TZINT        = &epwm2_tzint_isr;
     IER |= M_INT2;
     EDIS;               // This is needed to disable write to EALLOW protected registers
-
-#ifdef TEST_INV_PWM_SETTING
-    PWM_2ChCntUpSetDutyFull(pwm1, 1, 300, 1);
-    PWM_2ChCntUpSetDutyFull(pwm2, 2, 300, 1);
-#endif
 
 #endif
 

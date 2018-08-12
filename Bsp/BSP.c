@@ -1,10 +1,25 @@
-/*
- * BSP.c
+/** @FILE NAME:    BSP.c
+ *  @DESCRIPTION:  This file for ...
  *
- *  Created on: Jul 9, 2018
- *      Author: MSI
- */
-
+ *  Copyright (c) 2018 EES Ltd.
+ *  All Rights Reserved This program is the confidential and proprietary
+ *  product of EES Ltd. Any Unauthorized use, reproduction or transfer
+ *  of this program is strictly prohibited.
+ *
+ *  @Author: HaiHoang
+ *  @NOTE:   No Note at the moment
+ *  @BUG:    No known bugs.
+ *
+ *<pre>
+ *  MODIFICATION HISTORY:
+ *
+ *  Ver   Who       Date                Changes
+ *  ----- --------- ------------------  ----------------------------------------
+ *  1.00  HaiHoang  August 1, 2018      First release
+ *
+ *
+ *</pre>
+ ******************************************************************************/
 
 /***************************** Include Files *********************************/
 #include <DSP28x_Project.h>
@@ -342,9 +357,11 @@ void ADC_Init() {
     ChSel[1] = 1;
     ChSel[2] = 2;
     ChSel[3] = 3;
+    ChSel[4] = 4;
 
-    ChSel[4] = 8;
-    ChSel[5] = 9;
+    ChSel[5] = 8;
+    ChSel[6] = 9;
+
 
 //    TrigSel[0] = ADCTRIG_CPU_TINT0;
 //    TrigSel[1] = ADCTRIG_CPU_TINT0;
@@ -359,6 +376,7 @@ void ADC_Init() {
     TrigSel[3] = ADCTRIG_EPWM1_SOCA;
     TrigSel[4] = ADCTRIG_EPWM1_SOCA;
     TrigSel[5] = ADCTRIG_EPWM1_SOCA;
+    TrigSel[6] = ADCTRIG_EPWM1_SOCA;
 
     ADC_SocConfig(ChSel, TrigSel, ACQPS, ADC_NUM_CHAN_USED, 0);
 
@@ -584,20 +602,20 @@ EPwmRet PWM_2ChCntUpDownBoostCfg(struct EPWM_REGS* pwm, uint32_t freq,
     pwm->CMPB = pwm->TBPRD;     // - pwm->CMPA.half.CMPA;
 
     if(channel == 1) {
-        pwm->AQCTLA.bit.ZRO = AQ_SET;
-        pwm->AQCTLA.bit.CAU = AQ_CLEAR;
+//        pwm->AQCTLA.bit.ZRO = AQ_SET;
+//        pwm->AQCTLA.bit.CAU = AQ_CLEAR;
 
         pwm->AQCTLB.bit.ZRO = AQ_SET;
         pwm->AQCTLB.bit.CAU = AQ_CLEAR;
 
-        pwm->AQCTLB.bit.PRD = AQ_SET;
-        pwm->AQCTLB.bit.CBD = AQ_CLEAR;
+//        pwm->AQCTLB.bit.PRD = AQ_SET;
+//        pwm->AQCTLB.bit.CBD = AQ_CLEAR;
     } else {
-        pwm->AQCTLA.bit.PRD = AQ_SET;
-        pwm->AQCTLA.bit.CBD = AQ_CLEAR;
+//        pwm->AQCTLA.bit.PRD = AQ_SET;
+//        pwm->AQCTLA.bit.CBD = AQ_CLEAR;
 
-        pwm->AQCTLB.bit.ZRO = AQ_SET;
-        pwm->AQCTLB.bit.CAU = AQ_CLEAR;
+//        pwm->AQCTLB.bit.ZRO = AQ_SET;
+//        pwm->AQCTLB.bit.CAU = AQ_CLEAR;
 
         pwm->AQCTLB.bit.PRD = AQ_SET;
         pwm->AQCTLB.bit.CBD = AQ_CLEAR;
@@ -618,7 +636,7 @@ EPwmRet PWM_2ChCntUpDownBoostCfg(struct EPWM_REGS* pwm, uint32_t freq,
  *  @note
  */
 EPwmRet PWM_2ChUpDownBoostSetDuty(struct EPWM_REGS* pwm, uint16_t duty) {
-    if(duty > pwm->TBPRD || duty > Boost_SW_Max_Duty)
+    if(duty > pwm->TBPRD)
         return PWM_ERROR_DUTY;
 
     pwm->CMPA.half.CMPA = duty;
@@ -1016,7 +1034,7 @@ void ADC_SocConfig(int ChSel[], int Trigsel[],
  *  @return Void.
  *  @note
  */
-EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm) {
+EPwmRet PWM_InverterConfigTripZone(struct EPWM_REGS *pwm) {
 
     EALLOW;
 
@@ -1052,7 +1070,7 @@ EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm) {
  *  @return Void.
  *  @note
  */
-EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm) {
+EPwmRet PWM_InverterConfigTripZone(struct EPWM_REGS *pwm) {
 
     EALLOW;
 
@@ -1077,21 +1095,81 @@ EPwmRet PWM_ModuleConfigTripZone(struct EPWM_REGS *pwm) {
 }
 
 
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+EPwmRet PWM_BoosterConfigTripZone(struct EPWM_REGS *pwm) {
+
+    EALLOW;
+
+    pwm->DCTRIPSEL.bit.DCAHCOMPSEL  = DC_COMP2OUT;               // DCAH = Comparator 1 output
+
+    pwm->TZDCSEL.bit.DCAEVT2        = TZ_DCAH_HI;              // TZ_DCAH_HI;           // DCAEVT1 =  DCAH high
+                                                               // (will become active as Comparator output goes high)
+    pwm->DCACTL.bit.EVT2SRCSEL      = DC_EVT2;                 // DCAEVT1 = DCAEVT1 (not filtered)
+    pwm->DCACTL.bit.EVT2FRCSYNCSEL  = DC_EVT_ASYNC;            // Take async path
+
+    pwm->TZCTL.bit.TZA              = TZ_FORCE_LO;             // EPWM1A will go high
+    pwm->TZCTL.bit.TZB              = TZ_FORCE_LO;             // EPWM1B will go low
+
+    pwm->TZSEL.bit.DCAEVT2          = 1;
+
+    pwm->TZEINT.bit.DCAEVT2         = 1;
+    pwm->TZEINT.bit.CBC             = 1;
+
+    EDIS;
+
+    return PWM_SUCCESS;
+}
+
+
 #endif
 
-void COMP_ModuleConfig(struct COMP_REGS* cmp, uint16_t value) {
-    EALLOW;
-    AdcRegs.ADCCTL1.bit.ADCBGPWD =  1;
-    GpioCtrlRegs.AIOMUX1.bit.AIO2 = 2;          // Configure AIO2 (disable) for CMP1A (analog input) operation
 
-    cmp->COMPCTL.bit.COMPDACEN  = 1;        // Power up Comparator locally - enable compare blocks
-    cmp->COMPCTL.bit.COMPSOURCE = 0;        // Connect the inverting input to internal DAC
-    cmp->COMPCTL.bit.SYNCSEL    = 0;        //Asynchronous version of Comparator output is passed
-    cmp->COMPCTL.bit.CMPINV     = 0;        //Output of comparator is passed
-    cmp->DACVAL.bit.DACVAL      = value;      // Set DAC output - Input is Q15 - Convert to Q10
-                                            // V = DACVAL * (VDDA-VSSA)/1023
-                                            // (VDDA = 3.3V, VSSA = 0 --> DACVAL = 1023*v/3.3 =
-                                            // (1023*Rshunt*Gain/3.3)*I= (1023*0.02*19.53/3.3)*3 = 121*3 = 363
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+void COMP_InverterTripZoneConfig(struct COMP_REGS* cmp, uint16_t value) {
+    EALLOW;
+    AdcRegs.ADCCTL1.bit.ADCBGPWD    = 1;
+    GpioCtrlRegs.AIOMUX1.bit.AIO2   = 2;          // Configure AIO2 (disable) for CMP1A (analog input) operation
+
+    cmp->COMPCTL.bit.COMPDACEN      = 1;        // Power up Comparator locally - enable compare blocks
+    cmp->COMPCTL.bit.COMPSOURCE     = 0;        // Connect the inverting input to internal DAC
+    cmp->COMPCTL.bit.SYNCSEL        = 0;        //Asynchronous version of Comparator output is passed
+    cmp->COMPCTL.bit.CMPINV         = 0;        //Output of comparator is passed
+    cmp->DACVAL.bit.DACVAL          = value;
+    EDIS;
+}
+/*****************************************************************************/
+/** @brief
+ *
+ *
+ *  @param
+ *  @return Void.
+ *  @note
+ */
+void COMP_BoosterTripZoneConfig(struct COMP_REGS* cmp, uint16_t value) {
+    EALLOW;
+    AdcRegs.ADCCTL1.bit.ADCBGPWD    = 1;
+    GpioCtrlRegs.AIOMUX1.bit.AIO4   = 2;          // Configure AIO4 (disable) for CMP2A (analog input) operation
+
+    cmp->COMPCTL.bit.COMPDACEN      = 1;        // Power up Comparator locally - enable compare blocks
+    cmp->COMPCTL.bit.COMPSOURCE     = 0;        // Connect the inverting input to internal DAC
+    cmp->COMPCTL.bit.SYNCSEL        = 0;        //Asynchronous version of Comparator output is passed
+    cmp->COMPCTL.bit.CMPINV         = 0;        //Output of comparator is passed
+    cmp->DACVAL.bit.DACVAL          = value;
+
     EDIS;
 }
 

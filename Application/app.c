@@ -1,11 +1,25 @@
-/*
- * app.c
+/** @FILE NAME:    app.c
+ *  @DESCRIPTION:  This file for ...
  *
- *  Created on: Jul 17, 2018
- *      Author: PC
- */
-
-
+ *  Copyright (c) 2018 EES Ltd.
+ *  All Rights Reserved This program is the confidential and proprietary
+ *  product of EES Ltd. Any Unauthorized use, reproduction or transfer
+ *  of this program is strictly prohibited.
+ *
+ *  @Author: HaiHoang
+ *  @NOTE:   No Note at the moment
+ *  @BUG:    No known bugs.
+ *
+ *<pre>
+ *  MODIFICATION HISTORY:
+ *
+ *  Ver   Who       Date                Changes
+ *  ----- --------- ------------------  ----------------------------------------
+ *  1.00  HaiHoang  August 1, 2018      First release
+ *
+ *
+ *</pre>
+ ******************************************************************************/
 
 /***************************** Include Files *********************************/
 #include <app.h>
@@ -44,10 +58,10 @@ void App_Init(SApp *pApp) {
     uint32_t devStateInit = 0;
     // application timer
     Timer_Init();
-    // init booster
-    Boost_Init(&pApp->sBooster);
     // init inverter
     Inv_Init(&pApp->sInverter);
+    // init booster
+    Boost_Init(&pApp->sBooster);
     // init app instance
     pApp->counterAdc = 0;
     pApp->counterCtrl = 0;
@@ -73,7 +87,7 @@ void App_Init(SApp *pApp) {
 
     // init input caclculating
     Adc_InitValue(pApp->battVolt,                   /* adc node */
-                  0,                                /* type adc node */
+                  0,                                /* type adc node 1 avg 0 filter  */
                   _IQ24(1.0),                       /* coefficient for calculate realvalue */
                   10,                               /* average counter */
                   10,                               /* offset value */
@@ -82,17 +96,17 @@ void App_Init(SApp *pApp) {
 
 
     Adc_InitValue(pApp->boostVolt,
-                  0,
+                  1,
                   _IQ24(Boost_Voltage_Adc_Coeff),
-                  50,
+                  100,
                   15,
                   Adc_Noise_Cuttoff_Freq);
 
 
     Adc_InitValue(pApp->boostCurr,
-                  0,
-                  _IQ24(0.001),
-                  10,
+                  1,
+                  _IQ24(Boost_Current_Adc_Coeff),
+                  100,
                   10,
                   Adc_Noise_Cuttoff_Freq);
 
@@ -137,12 +151,12 @@ void App_Init(SApp *pApp) {
     pApp->overCurrent2          = FALSE;
 
 #if Build_Option == Build_Boost_Only
-    pApp->battVolt.realValue            = pApp->maxBattVolt - _IQ(1);
-    pApp->boostCurr.realValue           = pApp->maxBoostCurr - _IQ(200) ;
-    pApp->boostVolt.realValue           = pApp->maxBoostVolt + _IQ(5) ;
-    pApp->inverterCurr.realValue        = pApp->maxInverterCurr - _IQ(10);
-    pApp->lineDetectVolt.realValue      = pApp->maxLineDetectVolt + _IQ(1);
-    pApp->loadDetectVolt.realValue      = pApp->maxLoadDetectVolt - _IQ(1)
+    pApp->battVolt.realValue            = pApp->maxBattVolt - _IQ18(1);
+    pApp->boostCurr.realValue           = pApp->maxBoostCurr - _IQ18(200) ;
+    pApp->boostVolt.realValue           = pApp->maxBoostVolt + _IQ18(5) ;
+    pApp->inverterCurr.realValue        = pApp->maxInverterCurr - _IQ18(10);
+    pApp->lineDetectVolt.realValue      = pApp->maxLineDetectVolt + _IQ18(1);
+    //pApp->loadDetectVolt.realValue      = pApp->maxLoadDetectVolt - _IQ(1);
     devStateInit = DS_RUN_UPS;
 #elif Build_Option == Build_Inverter_Fix
     pApp->battVolt.realValue            = pApp->maxBattVolt - _IQ18(1);
@@ -359,7 +373,6 @@ void App_ProcessInput(SApp *pApp) {
 
             #elif Inverter_Switching_Type == Inverter_Type_Open_Full
 
-            GPIO_TOGGLE_DISP_BATT_LOW();
             pApp->sInverter.pwm1Handle->CMPA.half.CMPA =
                     _IQ24mpy(pApp->sInverter.sSine1Phase.sinPwmA,
                              pApp->sInverter.pwm1Handle->TBPRD>>1);
@@ -580,9 +593,9 @@ void App_Control(SApp *pApp) {
 
             if(Inv_GetGain(&pApp->sInverter) < _IQ24(Inverter_Max_Mf) && Inv_GetGain(&pApp->sInverter) < gain) {
 
-                _iq currGain = Inv_GetGain(&pApp->sInverter) + Inv_GetGainStep(&pApp->sInverter);
+                pApp->sInverter.currGain = Inv_GetGain(&pApp->sInverter) + Inv_GetGainStep(&pApp->sInverter);
 
-                Inv_SetGain(&pApp->sInverter, currGain);
+                Inv_SetGain(&pApp->sInverter, pApp->sInverter.currGain);
 
                 //LREP("inc gain = %d\r\n", _IQ24int(_IQ24mpy(currGain, _IQ24(100))));
             } else {
@@ -602,19 +615,25 @@ void App_Control(SApp *pApp) {
 
             // update inverter sine value factor
             if(pApp->lastBoostVolt != pApp->boostVolt.realValue && pApp->numTripOccurs == 0) {
+                _iq gain = 0;
+                if(_IQabs(pApp->boostVolt.realValue - pApp->lastBoostVolt) > _IQ18(2)) {
 
-                _iq gain = _IQdiv(pApp->sInverter.bCoeff - pApp->boostVolt.realValue,
-                                  pApp->sInverter.aCoeff);
+                     pApp->sInverter.currGain = _IQ24div(pApp->sInverter.bCoeff - pApp->boostVolt.realValue,
+                                      pApp->sInverter.aCoeff);
 
-                //_iq gain = _IQ(0.8);
+                    //_iq gain = _IQ(0.8);
+                    pApp->lastBoostVolt = pApp->boostVolt.realValue;
+                }
 
-                gain += _IQ24mpyIQX(pApp->sInverter.currFbFact, 24, pApp->inverterCurr.realValue, 18);
+                gain = pApp->sInverter.currGain +
+                        _IQ24mpyIQX(pApp->sInverter.currFbFact,
+                                    24, pApp->inverterCurr.realValue, 18);
+
                 gain = MIN(gain, pApp->sInverter.gainMax);
                 Inv_SetGain(&pApp->sInverter, gain);
-                pApp->lastBoostVolt = pApp->boostVolt.realValue;
-                //LREP("adc: %d\r\n", (long)_IQ18int(pApp->boostVolt.realValue));
-
+                //Inv_SetGain(&pApp->sInverter, _IQ24(0.9));
             }
+
         } else { // Stop device
             App_StopUps(pApp);
             return;
