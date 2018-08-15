@@ -54,13 +54,13 @@ typedef struct SPID_ {
                       }
 
 
-#define PID_ProcessM(pPid, setPoint, feedBack)                   {                      \
-    (pPid)->currErr       = setPoint - feedBack;                                        \
-    (pPid)->Proportional  = _IQ24mpy((pPid)->KP, (pPid)->currErr);                      \
-    (pPid)->Integration  += _IQ24mpy((pPid)->KI, (pPid)->currErr + (pPid)->prevErr);    \
-    (pPid)->Derative      = _IQ24mpy((pPid)->KD, (pPid)->currErr - (pPid)->prevErr);    \
-    (pPid)->prevErr       = (pPid)->currErr;                        \
-    (pPid)->PIDOut        = (pPid)->Proportional + (pPid)->Integration + (pPid)->Derative; \
+#define PID_ProcessM(pPid, setPoint, feedBack)                   {                                  \
+    (pPid)->currErr       = setPoint - feedBack;                                                    \
+    (pPid)->Proportional  = _IQ24mpyIQX((pPid)->KP, 24, (pPid)->currErr, 18);                       \
+    (pPid)->Integration  += _IQ24mpyIQX((pPid)->KI, 24, (pPid)->currErr + (pPid)->prevErr, 18);     \
+    (pPid)->Derative      = _IQ24mpyIQX((pPid)->KD, 24, (pPid)->currErr - (pPid)->prevErr, 18);     \
+    (pPid)->prevErr       = (pPid)->currErr;                                                        \
+    (pPid)->PIDOut        = (pPid)->Proportional + (pPid)->Integration + (pPid)->Derative;          \
 }
 
 /************************** Function Prototypes ******************************/

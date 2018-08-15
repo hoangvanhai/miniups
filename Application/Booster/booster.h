@@ -31,6 +31,7 @@
 #include <DSP28x_Project.h>
 #include <BSP.h>
 #include <pid.h>
+#include <console.h>
 
 /************************** Constant Definitions *****************************/
 #define BOOST_A_COEFF       76.1249999999998
@@ -44,7 +45,6 @@ typedef enum BoostRet_ {
 typedef enum EBoostState_ {
     BS_IDLE = 0,
     BS_RUNNING,
-    BS_ERROR
 }EBoostState;
 
 
@@ -56,9 +56,10 @@ typedef struct SBooster_ {
     uint16_t    phaseDiff;
     uint32_t    freq;
     uint16_t    period;
-    uint16_t    dutyv;          // duty value
+    uint16_t    dutyValue;          // duty value
     _iq         periodIQ;
-    _iq         dutyMax;
+    _iq         dutyMaxPer;
+    _iq         dutyCurrPer;
     _iq         setVolt;
 #if Boost_Method_Used == Boost_Method_Close_Loop
     SPID        sPid;
@@ -70,27 +71,37 @@ typedef struct SBooster_ {
 /***************** Macros (Inline Functions) Definitions *********************/
 #define Boost_SetState(pBst, state)     (pBst)->eState = state
 
-#define Boost_ApplyM(pBst) {\
-    if(PWM_2ChUpDownBoostSetDuty((pBst)->pwmAHandle, (pBst)->dutyv) != PWM_SUCCESS) { \
-        return BR_FAIL; \
-    } \
-    if(PWM_2ChUpDownBoostSetDuty((pBst)->pwmBHandle, (pBst)->dutyv) != PWM_SUCCESS) { \
-        return BR_FAIL; \
+#define PWM_2ChUpDownBoostSetDuty(pwm, duty) { \
+    /*LREP("SET DUTY %d\r\n", (long)duty); */ \
+    if((duty) < (pwm)->TBPRD) { \
+        (pwm)->CMPA.half.CMPA = (duty);   \
+        (pwm)->CMPB = (pwm)->TBPRD - (duty);  \
     } \
 }
 
-#define Boost_SetM(pBst, percen) { \
-    (pBst)->dutyv = _IQint(_IQmpy(percen, (pBst)->periodIQ)); \
-    Boost_ApplyM(pBst); \
+#define Boost_Apply(pBst) { \
+    PWM_2ChUpDownBoostSetDuty((pBst)->pwmAHandle, (pBst)->dutyValue); \
+    PWM_2ChUpDownBoostSetDuty((pBst)->pwmBHandle, (pBst)->dutyValue); \
+}
+
+#define Boost_Set(pBst, percen) { \
+    (pBst)->dutyValue = _IQ18int(_IQ18mpyIQX((percen), 24, (pBst)->periodIQ, 18)); \
+    Boost_Apply(pBst); \
+}
+
+
+#define Boost_Process(pBst, measVoltage) { \
+    PID_ProcessM(&(pBst)->sPid, (pBst)->setVolt, measVoltage);\
+    (pBst)->dutyCurrPer = (pBst)->sPid.PIDOut;\
+    (pBst)->dutyCurrPer = MIN((pBst)->dutyCurrPer, (pBst)->dutyMaxPer);\
+    (pBst)->dutyCurrPer = MAX((pBst)->dutyCurrPer, 0);\
+    Boost_Set((pBst), (pBst)->dutyCurrPer);   \
 }
 
 /************************** Function Prototypes ******************************/
 BRet Boost_Init (SBooster *pBst);
-BRet Boost_Apply(SBooster *pBst);
-BRet Boost_Set(SBooster *pBst, _iq percen);
 BRet Boost_Stop(SBooster *pBst);
 BRet Boost_Start(SBooster *pBst);
-BRet Boost_Process(SBooster *pBst, _iq measVoltage);
 void PWM_Boost_Init(PWM_REGS * pwmA, PWM_REGS * pwmB, uint32_t freq, uint16_t phase);
 
 /************************** Variable Definitions *****************************/

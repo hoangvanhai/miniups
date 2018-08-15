@@ -52,17 +52,15 @@ TimerHandle testTimer = NULL;
  *  @note
  */
 void Clb_Timer(uint32_t timeTick, void *p_arg) {
-    static uint16_t duty = 0;
+//    static _iq duty = 0;
     (void)timeTick;
     (void)p_arg;
 
-    duty += 10;
-
-    if(duty >= sApp.sBooster.pwmAHandle->TBPRD - 20) duty = 0;
-
-    PWM_2ChUpDownBoostSetDuty(sApp.sBooster.pwmAHandle, duty);
-    PWM_2ChUpDownBoostSetDuty(sApp.sBooster.pwmBHandle, duty);
-
+//    duty += _IQ24(0.05);
+//
+//    if(duty >= _IQ24(0.9)) duty = 0;
+//
+//    Boost_Set(&sApp.sBooster, duty);
     GPIO_TOGGLE_RUN();
 }
 
@@ -130,8 +128,16 @@ void main(void)
 //             (long)AdcResult.ADCRESULT4, (long)AdcResult.ADCRESULT5,
 //             (long)AdcResult.ADCRESULT6);
 
-        LREP("adc4: %d - current: %d mA\r\n", (long)AdcResult.ADCRESULT4,
-             (long)_IQ18int(_IQ18mpy(sApp.boostCurr.realValue, _IQ18(1000))));
+
+        LREP("batt volt: %d  boost volt: %d - boost curr: %d x10mA duty: %d x100\r\n",
+             (long)_IQ18int(sApp.battVolt.realValue),
+             (long)_IQ18int(sApp.boostVolt.realValue),
+             (long)_IQ18int(_IQ18mpy(sApp.boostCurr.realValue, _IQ18(100))),
+             (long)_IQ18int(_IQ18mpyIQX(sApp.sBooster.dutyCurrPer, 24, _IQ18(100), 18)));
+
+
+//        LREP("volt: %d - current: %d x10mA\r\n", (long)_IQ18int(sApp.boostVolt.realValue),
+//             (long)_IQ18int(_IQ18mpy(sApp.boostCurr.realValue, _IQ18(100))));
 
 
 //        LREP("ADC: %d - V: %d\r\n", (long)AdcResult.ADCRESULT1,
@@ -149,26 +155,6 @@ void main(void)
 //             (long)EPwm1Regs.TZEINT.all, (long)EPwm1Regs.TZFLG.all, (long)EPwm1Regs.TZCLR.all, (long)EPwm1Regs.TZFRC.all);
 
         //LREP("COMPSTS %x - DACVAL: %x \r\n", (long)Comp1Regs.COMPSTS.bit.COMPSTS, (long)Comp1Regs.DACVAL.bit.DACVAL);
-#if 0
-        int16_t value;
-        value = _IQ18int(sApp.boostVolt.realValue);
-        if(max <  value)
-        {
-            max = value;
-        }
-        else if( min > value)
-        {
-            min = value;
-        }
-        tmp++;
-        if (tmp == 10)
-        {
-            LREP("\r\n[Max %d - Min %d]", (long)max, (long)min);
-            tmp = 0;
-            max = -32767;
-            min = 32767;
-        }
-#endif
 
     }
 }

@@ -87,21 +87,27 @@ void App_Init(SApp *pApp) {
 
     // init input caclculating
     Adc_InitValue(pApp->battVolt,                   /* adc node */
-                  0,                                /* type adc node 1 avg 0 filter  */
-                  _IQ24(1.0),                       /* coefficient for calculate realvalue */
+                  1,                                /* type adc node 1 avg 0 filter  */
+                  _IQ24(Batt_Volt_Adc_Coeff),       /* coefficient for calculate realvalue */
                   10,                               /* average counter */
                   10,                               /* offset value */
                   Adc_Noise_Cuttoff_Freq);          /* cuttoff freq */
 
 
 
+//    Adc_InitValue(pApp->boostVolt,
+//                  1,
+//                  _IQ24(Boost_Voltage_Adc_Coeff),
+//                  1000,
+//                  15,
+//                  Adc_Noise_Cuttoff_Freq);
+
     Adc_InitValue(pApp->boostVolt,
-                  1,
+                  0,
                   _IQ24(Boost_Voltage_Adc_Coeff),
-                  100,
+                  1000,
                   15,
                   Adc_Noise_Cuttoff_Freq);
-
 
     Adc_InitValue(pApp->boostCurr,
                   1,
@@ -153,7 +159,7 @@ void App_Init(SApp *pApp) {
 #if Build_Option == Build_Boost_Only
     pApp->battVolt.realValue            = pApp->maxBattVolt - _IQ18(1);
     pApp->boostCurr.realValue           = pApp->maxBoostCurr - _IQ18(200) ;
-    pApp->boostVolt.realValue           = pApp->maxBoostVolt + _IQ18(5) ;
+    pApp->boostVolt.realValue           = pApp->maxBoostVolt - _IQ18(5) ;
     pApp->inverterCurr.realValue        = pApp->maxInverterCurr - _IQ18(10);
     pApp->lineDetectVolt.realValue      = pApp->maxLineDetectVolt + _IQ18(1);
     //pApp->loadDetectVolt.realValue      = pApp->maxLoadDetectVolt - _IQ(1);
@@ -201,9 +207,10 @@ static void Clb_AppControl(uint32_t tick, void *p_arg) {
     SApp *pApp = (SApp*)p_arg;
     (void)tick;
 
-    if(pApp->eDevState == DS_RUN_UPS) {
+    if(pApp->eDevState == DS_RUN_UPS ||
+       pApp->eDevState == DS_RUN_UPS | DS_BOOST_VOLT_LOW) {
         pApp->eDevSm = DSM_STARTING_BOOSTER;
-        LREP("starting booster\r\n");
+        LREP("change to START BOOSTER\r\n");
     }
 
     if(pApp->eDevState & DS_INV_CURR_OVER_1) {
@@ -270,21 +277,44 @@ static void Clb_AppProtectTripCurrent(uint32_t tick, void *p_arg) {
 /*****************************************************************************/
 /** @brief
  *
- *
+ *#if 0
+        long value;
+        value = _IQ18int(pApp->boostVolt.realValue); //AdcResult.ADCRESULT1;
+        if(max <  value)
+        {
+            max = value;
+        }
+        else if( min > value)
+        {
+            min = value;
+        }
+        tmp++;
+        if (tmp == 5000)
+        {
+            LREP("[Max %d - Min %d]\r\n", (long)max, (long)min);
+            tmp = 0;
+            max = -32767;
+            min = 32767;
+        }
+
+        return;
+#endif
  *  @param
  *  @return Void.
  *  @note
  */
 void App_ProcessInput(SApp *pApp) {
+
+#if 0
     //static uint16_t counter = 0;
 #if Build_Option == Build_Boost_Only     // only boost
 
     Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
     Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
-    //Adc_CalcValue(pApp->inverterCurr,    AdcResult.ADCRESULT2);
+    Adc_CalcValue(pApp->inverterCurr,    AdcResult.ADCRESULT2);
     Adc_CalcValue(pApp->boostCurr,       AdcResult.ADCRESULT3);
-    //Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
-    //Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
+    Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
+    Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
 
 #elif Build_Option == Build_Inverter_Fix  // only inverter
     //Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
@@ -314,34 +344,13 @@ void App_ProcessInput(SApp *pApp) {
 
 
 
-#if 0
-        long value;
-        value = _IQ18int(pApp->boostVolt.realValue); //AdcResult.ADCRESULT1;
-        if(max <  value)
-        {
-            max = value;
-        }
-        else if( min > value)
-        {
-            min = value;
-        }
-        tmp++;
-        if (tmp == 5000)
-        {
-            LREP("[Max %d - Min %d]\r\n", (long)max, (long)min);
-            tmp = 0;
-            max = -32767;
-            min = 32767;
-        }
 
-        return;
-#endif
 
     /*
      * Control duty cycle
      */
 
-#if 1
+
     if(pApp->sInverter.eState == INV_RUNNING) {
         //counter++;
         //if(counter >= pApp->sInverter.genSinRatio)
@@ -412,7 +421,7 @@ void App_ProcessInput(SApp *pApp) {
  */
 
 void App_Control(SApp *pApp) {
-
+    static _iq currVal = 0;
     /*
      * CHECK CONDITION AND CONTROL
      */
@@ -430,7 +439,7 @@ void App_Control(SApp *pApp) {
     if(pApp->battVolt.realValue <= pApp->minBattVolt) { // under low volt
         // Set error low voltage
         App_SetDevState(pApp, DS_BATT_VOLT_LOW);
-        GPIO_SET_HIGH_DISP_BATT_LOW();
+        //GPIO_SET_HIGH_DISP_BATT_LOW();
     } else if(pApp->battVolt.realValue > pApp->minBattVolt &&
             pApp->battVolt.realValue <= (pApp->minBattVolt + _IQ18(Batt_Hyst_Volt))) { // upper low volt but under Hyst
 
@@ -439,7 +448,7 @@ void App_Control(SApp *pApp) {
 
         } else { // Set error low volt
             App_SetDevState(pApp, DS_BATT_VOLT_LOW);
-            GPIO_SET_HIGH_DISP_BATT_LOW();
+            //GPIO_SET_HIGH_DISP_BATT_LOW();
         }
 
     } else if(pApp->battVolt.realValue > (pApp->minBattVolt+ _IQ18(Batt_Hyst_Volt)) &&
@@ -458,21 +467,21 @@ void App_Control(SApp *pApp) {
      */
     if(pApp->lineDetectVolt.realValue > pApp->maxLineDetectVolt) { // Detect ac loss
         App_ClearDevState(pApp, DS_AC_AVAIL);
-        GPIO_SET_LOW_DISP_ACIN();
+        //GPIO_SET_LOW_DISP_ACIN();
     } else {    // Detect ac available
         App_SetDevState(pApp, DS_AC_AVAIL);
-        GPIO_SET_HIGH_DISP_ACIN();
+        //GPIO_SET_HIGH_DISP_ACIN();
     }
 
     /*
      * Check boost voltage
      */
     if(pApp->boostVolt.realValue < pApp->minBoostVolt) { // Under voltage after boost
-         App_SetDevState(pApp, DS_BOOST_VOLT_LOW);
-         //LREP("L");
+        // only check low volt boost when usp is running
+        App_SetDevState(pApp, DS_BOOST_VOLT_LOW);
     } else if(pApp->boostVolt.realValue > pApp->maxBoostVolt) { // Over voltage after boost
         App_SetDevState(pApp, DS_BOOST_VOLT_HIGH);
-        //LREP("H");
+        currVal = pApp->boostVolt.realValue;
     } else { // Normal voltage
         App_ClearDevState(pApp, DS_BOOST_VOLT_LOW);
         App_ClearDevState(pApp, DS_BOOST_VOLT_HIGH);
@@ -557,7 +566,9 @@ void App_Control(SApp *pApp) {
     switch (pApp->eDevSm) {
     case DSM_STOP_UPS:
         // if not yet kick start UPS event
-        if(pApp->eDevState == DS_RUN_UPS) {
+        if(pApp->eDevState == DS_RUN_UPS ||
+           pApp->eDevState == DS_RUN_UPS | DS_BOOST_VOLT_LOW) {
+
             if(!Timer_IsRunning(pApp->hTimerControl)) {
                 // kick start
                 Timer_StartAt(pApp->hTimerControl, Inverter_Soft_Start_Time);
@@ -565,24 +576,38 @@ void App_Control(SApp *pApp) {
             }
         } else { // while waitting starting time, error event occours
             if(Timer_IsRunning(pApp->hTimerControl) &&
-                    !pApp->overCurrent1 && !pApp->overCurrent2)
+                    !pApp->overCurrent1 && !pApp->overCurrent2) {
+                LREP("stop soft start timer\r\n");
                 Timer_Stop(pApp->hTimerControl);
+            }
         }
+
         break;
     case DSM_STARTING_BOOSTER:
-        if(pApp->eDevState == DS_RUN_UPS) {
-            Boost_Start(&pApp->sBooster);
-            GPIO_SET_HIGH_CTRL_RELAY();
-            Inv_Start(&pApp->sInverter);
-            pApp->eDevSm = DSM_STARTING_INVERTER;
-            Inv_SetGain(&pApp->sInverter, _IQ(Inverter_Start_Mf));
+        if(pApp->eDevState == DS_RUN_UPS ||
+                pApp->eDevState == DS_RUN_UPS | DS_BOOST_VOLT_LOW) {
+            if(pApp->sBooster.eState != BS_RUNNING) {
+                Boost_Start(&pApp->sBooster);
+            }
+            if(pApp->boostVolt.realValue > pApp->minBoostVolt &&
+                    pApp->boostVolt.realValue < pApp->maxBoostVolt    ) {
+                //GPIO_SET_HIGH_CTRL_RELAY();
+                pApp->eDevSm = DSM_STARTING_INVERTER;
+                //LREP("change to START INVERTER\r\n");
+                LREP("V: %d ", (long)_IQ18int(pApp->boostVolt.realValue));
+            }
         } else {
             Boost_Stop(&pApp->sBooster);
-            GPIO_SET_LOW_CTRL_RELAY();
+            //GPIO_SET_LOW_CTRL_RELAY();
             pApp->eDevSm = DSM_STOP_UPS;
         }
         break;
     case DSM_STARTING_INVERTER:
+
+        if(pApp->sInverter.eState != INV_RUNNING) {
+            Inv_Start(&pApp->sInverter);
+        }
+
         if(pApp->eDevState == DS_RUN_UPS                        ||
            pApp->eDevState == (DS_RUN_UPS | DS_INV_CURR_OVER_1) ||
            pApp->eDevState == (DS_RUN_UPS | DS_INV_CURR_OVER_2)) {
@@ -599,10 +624,16 @@ void App_Control(SApp *pApp) {
 
                 //LREP("inc gain = %d\r\n", _IQ24int(_IQ24mpy(currGain, _IQ24(100))));
             } else {
+                LREP("change to RUNNING \r\n");
                 pApp->eDevSm = DSM_RUNNING_UPS;
-                GPIO_SET_HIGH_DISP_UPS_RUN();
+                //GPIO_SET_HIGH_DISP_UPS_RUN();
             }
+        } else if(pApp->eDevState == DS_RUN_UPS ||
+                pApp->eDevState == DS_RUN_UPS | DS_BOOST_VOLT_LOW) {
+            Inv_Stop(&pApp->sInverter);
+            pApp->eDevSm = DSM_STARTING_BOOSTER;
         } else {
+            LREP("VOLT: %d\r\n", (long)_IQ18int(currVal));
             App_StopUps(pApp);
         }
         break;
@@ -616,6 +647,7 @@ void App_Control(SApp *pApp) {
             // update inverter sine value factor
             if(pApp->lastBoostVolt != pApp->boostVolt.realValue && pApp->numTripOccurs == 0) {
                 _iq gain = 0;
+                //putchar1('R');
                 if(_IQabs(pApp->boostVolt.realValue - pApp->lastBoostVolt) > _IQ18(2)) {
 
                      pApp->sInverter.currGain = _IQ24div(pApp->sInverter.bCoeff - pApp->boostVolt.realValue,
@@ -634,7 +666,13 @@ void App_Control(SApp *pApp) {
                 //Inv_SetGain(&pApp->sInverter, _IQ24(0.9));
             }
 
+        } else if(pApp->eDevState == DS_RUN_UPS ||
+                pApp->eDevState == DS_RUN_UPS | DS_BOOST_VOLT_LOW) {
+            Inv_Stop(&pApp->sInverter);
+            pApp->eDevSm = DSM_STARTING_BOOSTER;
         } else { // Stop device
+
+            LREP("VOLT: %d\r\n", (long)_IQ18int(currVal));
             App_StopUps(pApp);
             return;
         }

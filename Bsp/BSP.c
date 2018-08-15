@@ -83,13 +83,10 @@ void BSP_Init(void) {
      */
     InitCpuTimers();
     TIMER_Cpu0_Init(TIMER0_PERIOD);
-#ifndef TEST_INV_PWM_SETTING
-    TIMER_Cpu1_Init(TIMER_BASE / App_Control_Freq);
-#endif
+    //TIMER_Cpu1_Init(TIMER_BASE / App_Control_Freq);
     //TIMER_Cpu2_Init(TIMER_BASE / Inverter_GenSin_Freq);
 
     ADC_Init();
-
     UART_Init();
 }
 
@@ -348,10 +345,10 @@ void ADC_Init() {
     EPwm1Regs.ETPS.bit.SOCAPRD  = 1;                // Generate pulse on 1st event
     EPwm1Regs.ETCLR.bit.SOCA    = 1;                // Clear SOCA flag
 
-    PieVectTable.ADCINT1 = &adc_isr;
+    //PieVectTable.ADCINT1 = &adc_isr;
     EDIS;      // This is needed to disable write to EALLOW protected registers
 
-    PieCtrlRegs.PIEIER1.bit.INTx1 = 1; // Enable INT 1.1 in the PIE
+    //PieCtrlRegs.PIEIER1.bit.INTx1 = 1; // Enable INT 1.1 in the PIE
 
     ChSel[0] = 0;
     ChSel[1] = 1;
@@ -601,9 +598,10 @@ EPwmRet PWM_2ChCntUpDownBoostCfg(struct EPWM_REGS* pwm, uint32_t freq,
     pwm->CMPA.half.CMPA = 0;    //pwm->TBPRD >> 2;              // set duty 0% initially
     pwm->CMPB = pwm->TBPRD;     // - pwm->CMPA.half.CMPA;
 
+    // normal
     if(channel == 1) {
-//        pwm->AQCTLA.bit.ZRO = AQ_SET;
-//        pwm->AQCTLA.bit.CAU = AQ_CLEAR;
+        pwm->AQCTLA.bit.PRD = AQ_SET;
+        pwm->AQCTLA.bit.CBD = AQ_CLEAR;
 
         pwm->AQCTLB.bit.ZRO = AQ_SET;
         pwm->AQCTLB.bit.CAU = AQ_CLEAR;
@@ -611,8 +609,8 @@ EPwmRet PWM_2ChCntUpDownBoostCfg(struct EPWM_REGS* pwm, uint32_t freq,
 //        pwm->AQCTLB.bit.PRD = AQ_SET;
 //        pwm->AQCTLB.bit.CBD = AQ_CLEAR;
     } else {
-//        pwm->AQCTLA.bit.PRD = AQ_SET;
-//        pwm->AQCTLA.bit.CBD = AQ_CLEAR;
+        pwm->AQCTLA.bit.ZRO = AQ_SET;
+        pwm->AQCTLA.bit.CAU = AQ_CLEAR;
 
 //        pwm->AQCTLB.bit.ZRO = AQ_SET;
 //        pwm->AQCTLB.bit.CAU = AQ_CLEAR;
@@ -620,6 +618,29 @@ EPwmRet PWM_2ChCntUpDownBoostCfg(struct EPWM_REGS* pwm, uint32_t freq,
         pwm->AQCTLB.bit.PRD = AQ_SET;
         pwm->AQCTLB.bit.CBD = AQ_CLEAR;
     }
+
+#if 0
+    // invert
+    if(channel == 1) {
+        pwm->AQCTLA.bit.PRD = AQ_CLEAR;
+        pwm->AQCTLA.bit.CBD = AQ_SET;
+
+//        pwm->AQCTLB.bit.ZRO = AQ_SET;
+//        pwm->AQCTLB.bit.CAU = AQ_CLEAR;
+
+//        pwm->AQCTLB.bit.PRD = AQ_SET;
+//        pwm->AQCTLB.bit.CBD = AQ_CLEAR;
+    } else {
+        pwm->AQCTLA.bit.ZRO = AQ_CLEAR;
+        pwm->AQCTLA.bit.CAU = AQ_SET;
+
+//        pwm->AQCTLB.bit.ZRO = AQ_SET;
+//        pwm->AQCTLB.bit.CAU = AQ_CLEAR;
+
+//        pwm->AQCTLB.bit.PRD = AQ_SET;
+//        pwm->AQCTLB.bit.CBD = AQ_CLEAR;
+    }
+#endif
 
     EDIS;
 
@@ -635,14 +656,14 @@ EPwmRet PWM_2ChCntUpDownBoostCfg(struct EPWM_REGS* pwm, uint32_t freq,
  *  @return Void.
  *  @note
  */
-EPwmRet PWM_2ChUpDownBoostSetDuty(struct EPWM_REGS* pwm, uint16_t duty) {
-    if(duty > pwm->TBPRD)
-        return PWM_ERROR_DUTY;
-
-    pwm->CMPA.half.CMPA = duty;
-    pwm->CMPB = pwm->TBPRD - duty;
-    return PWM_SUCCESS;
-}
+//EPwmRet PWM_2ChUpDownBoostSetDuty(struct EPWM_REGS* pwm, uint16_t duty) {
+//    if(duty > pwm->TBPRD)
+//        return PWM_ERROR_DUTY;
+//
+//    pwm->CMPA.half.CMPA = duty;
+//    pwm->CMPB = pwm->TBPRD - duty;
+//    return PWM_SUCCESS;
+//}
 
 
 /*****************************************************************************/

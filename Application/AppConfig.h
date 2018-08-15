@@ -50,8 +50,8 @@
 // Định nghĩa tham số acquy.
 //Khi sử dụng trong chương trình chỉ chọn một trong các cấu hình này.
 
-//#define Batt_Volt_Sys                 12   // Vdc. Định nghĩa điện áp acquy mặc định
-#define Batt_Volt_Sys                   24   // Vdc. Định nghĩa điện áp acquy mặc định
+#define Batt_Volt_Sys                 12   // Vdc. Định nghĩa điện áp acquy mặc định
+//#define Batt_Volt_Sys                   24   // Vdc. Định nghĩa điện áp acquy mặc định
 
 // Nếu điện áp acquy được chọn là 12 thì gán tham số acquy như sau:
 // chỉ khi điện áp acquy trong dải giữa under và over mới cho mạch công suất hoạt động.
@@ -78,17 +78,19 @@
 #define Adc_Inverter_Current_Rat        (Adc_Reference_Volt /   \
                                         (Adc_Inverter_Shunt_Volt_Rat * Adc_Max_Value_12_Bits))
 
-#define Adc_Booster_Shunt_Volt_Rat      (0.1134)    //(0.123)
+#define Adc_Booster_Shunt_Volt_Rat      (0.14)  //(0.1134)    //(0.123)
+
+#define Batt_Volt_Adc_Coeff             (0.0029304029304029)
 
 ////////////////////// BOOST CONFIG SECTION ///////////////////////////////////
 // Định nghĩa tham số phần mềm mạch BOOST điện áp.
-#define Boost_Pwm_Freq                  (80000) //(50000)      //hz, tần số chuyển mạch mạch boost tính theo Khz.
-#define Boost_Duty_Coeff                (0.95)       //Duty cycle tối đa của mạch cầu H. CHuyển mạch cứng tương tự Push-pull.
+#define Boost_Pwm_Freq                  (50000) //(50000)      //hz, tần số chuyển mạch mạch boost tính theo Khz.
+#define Boost_Duty_Coeff                (0.15)   //(0.4)   //(0.95)       //Duty cycle tối đa của mạch cầu H. CHuyển mạch cứng tương tự Push-pull.
 #define Boost_Start_Percen_F             0.1
 
-#define Boost_Ki                        0.1 // Hệ số Ki tầng boost
-#define Boost_Kp                        0.1 // Hệ số Kp tầng boost
-#define Boost_Kd                        0.1 // Hệ số Kd tầng boost
+#define Boost_Kp                        (0.005)   // Hệ số Kp tầng boost
+#define Boost_Ki                        (0.0015)   // Hệ số Ki tầng boost
+#define Boost_Kd                        (0)     //0.1 // Hệ số Kd tầng boost
 
 #define Boost_Method_Open_Loop          1
 #define Boost_Method_Close_Loop         2
@@ -106,7 +108,9 @@
 
 #define Boost_Voltage_Adc_Coeff         (0.2086351782092141)   //(0.2122954444935863)    //(0.201680672268907) //(0.2142857142857143)  // convert ADC value to boost voltage
 #define Boost_Transform_Coeff           35
-#define Boost_Volt_Output               335
+#define Boost_Volt_Output               32  //335 //(32) //335
+
+#define Boost_SC_Protect_Value          (20) // A
 
 ////////////////////// INVERTER CONFIG SECTION ///////////////////////////////////
 
@@ -138,8 +142,8 @@
 #define Inverter_Max_Mf                 0.97    // Tỷ số điều biên cố định
 #define Inverter_Step_Mf                0.1   //((Inverter_Max_Mf - Inverter_Start_Mf) / Inverter_Soft_Start_Time)
 // Protect
-#define Inverter_Dcbus_Under            40      //300  // Vdc. Điện áp DC đầu vào bắt đầu cho chạy inverter.
-#define Inverter_Dcbus_Over             100      //350  // Vdc. Điện áp DC đầu vào ngắt inverter, không cho phép chạy lại.
+#define Inverter_Dcbus_Under            20      //300  // Vdc. Điện áp DC đầu vào bắt đầu cho chạy inverter.
+#define Inverter_Dcbus_Over             400     //350 //100      //350  // Vdc. Điện áp DC đầu vào ngắt inverter, không cho phép chạy lại.
 
 //#define Inverter_Dcbus_Under            60      //300  // Vdc. Điện áp DC đầu vào bắt đầu cho chạy inverter.
 //#define Inverter_Dcbus_Over             300      //350  // Vdc. Điện áp DC đầu vào ngắt inverter, không cho phép chạy lại.

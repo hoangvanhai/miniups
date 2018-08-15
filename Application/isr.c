@@ -41,9 +41,7 @@
 
 /************************** Variable Definitions *****************************/
 
-_iq sinValue = 0;
-_iq lastSinValue = 0;
-uint16_t duty;
+
 /*****************************************************************************/
 /** @brief
  *
@@ -56,8 +54,75 @@ uint16_t duty;
 __interrupt void epwm1_isr(void)
 {
 
+    GPIO_SET_HIGH_DISP_BATT_LOW();
+    // Control all UPS behaviour
+    //App_ProcessInput(&sApp);
+
+    //static uint16_t counter = 0;
+#if Build_Option == Build_Boost_Only     // only boost
+
+    Adc_CalcValue(sApp.battVolt,        AdcResult.ADCRESULT0);
+    Adc_CalcValue(sApp.boostVolt,       AdcResult.ADCRESULT1);
+//    Adc_CalcValue(sApp.inverterCurr,    AdcResult.ADCRESULT2);
+    Adc_CalcValue(sApp.boostCurr,       AdcResult.ADCRESULT3);
+//    Adc_CalcValue(sApp.lineDetectVolt,  AdcResult.ADCRESULT4);
+//    Adc_CalcValue(sApp.loadDetectVolt,  AdcResult.ADCRESULT5);
+
+#elif Build_Option == Build_Inverter_Fix  // only inverter
+    //Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
+    Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
+    Adc_CalcValue(pApp->inverterCurr,     AdcResult.ADCRESULT2);
+    //Adc_CalcValue(pApp->boostCurr,       AdcResult.ADCRESULT3);
+    //Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
+    //Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
+
+
+#elif Build_Option == Build_Inverter_All // all feature regardless AC and LOAD
+    //Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
+    Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
+    Adc_CalcValue(pApp->inverterCurr,     AdcResult.ADCRESULT2);
+    //Adc_CalcValue(pApp->boostCurr,       AdcResult.ADCRESULT3);
+    //Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
+    //Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
+
+#elif Build_Option == Build_Ups_All      // all device feature
+    Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
+    Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
+    Adc_CalcValue(pApp->inverterCurr,    AdcResult.ADCRESULT2);
+    Adc_CalcValue(pApp->boostCurr,       AdcResult.ADCRESULT3);
+    Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
+    Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
+#endif
+
+    /*
+     * Control duty cycle
+     */
+
+#if 1
+    if(sApp.sInverter.eState == INV_RUNNING)
+    {
+
+        Sin_GenValueM(&sApp.sInverter.sSine1Phase);
+        sApp.sInverter.pwm1Handle->CMPA.half.CMPA =
+                _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmA,
+                         sApp.sInverter.pwm1Handle->TBPRD>>1);
+
+        sApp.sInverter.pwm2Handle->CMPA.half.CMPA =
+                _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmB,
+                         sApp.sInverter.pwm2Handle->TBPRD>>1);
+
+    }
+
+#endif
+
+    if(sApp.sBooster.eState == BS_RUNNING) {
+        Boost_Process(&sApp.sBooster, sApp.boostVolt.realValue);
+    }
+
     EPwm1Regs.ETCLR.bit.INT = 1;
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
+
+    GPIO_SET_LOW_DISP_BATT_LOW();
 }
 
 /*****************************************************************************/
@@ -88,17 +153,17 @@ __interrupt void epwm2_isr(void)
 __interrupt void epwm3_isr(void)
 {
     static uint16_t counter = 0;
-
+    GPIO_SET_HIGH_DISP_ACIN();
     if(counter++ >= 4) {
         counter = 0;
         if(sApp.eDevState == DS_RUN_UPS) {
-            //Boost_Process(&sApp.sBooster, sApp.boostVolt.realValue);
+            Boost_Process(&sApp.sBooster, sApp.boostVolt.realValue);
         }
-        GPIO_TOGGLE_DISP_BATT_LOW();
     }
 
     EPwm3Regs.ETCLR.bit.INT = 1;
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;
+    GPIO_SET_LOW_DISP_ACIN();
 }
 
 
@@ -239,11 +304,14 @@ __interrupt void epwm4_tzint_isr(void)
  */
 __interrupt void cpu_timer0_isr(void)
 {
+    GPIO_SET_HIGH_DISP_UPS_RUN();
     CpuTimer0.InterruptCount++;
     sSysTick.u32SystemTickCount++;
     Timer_Update();
+    App_Control(&sApp);
     // Acknowledge this interrupt to receive more interrupts from group 1
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
+    GPIO_SET_LOW_DISP_UPS_RUN();
 }
 
 /*****************************************************************************/
@@ -259,7 +327,7 @@ __interrupt void cpu_timer1_isr(void)
     CpuTimer1.InterruptCount++;
 
     /* Control ups behaviours */
-    App_Control(&sApp);
+//    App_Control(&sApp);
 }
 
 /*****************************************************************************/
@@ -285,14 +353,82 @@ __interrupt void cpu_timer2_isr(void)
  */
 __interrupt void adc_isr(void)
 {
+#if 0
+    GPIO_SET_HIGH_DISP_BATT_LOW();
     // Control all UPS behaviour
-    App_ProcessInput(&sApp);
+    //App_ProcessInput(&sApp);
 
+    //static uint16_t counter = 0;
+#if Build_Option == Build_Boost_Only     // only boost
+
+//    Adc_CalcValue(sApp.battVolt,        AdcResult.ADCRESULT0);
+    Adc_CalcValue(sApp.boostVolt,       AdcResult.ADCRESULT1);
+//    Adc_CalcValue(sApp.inverterCurr,    AdcResult.ADCRESULT2);
+    Adc_CalcValue(sApp.boostCurr,       AdcResult.ADCRESULT3);
+//    Adc_CalcValue(sApp.lineDetectVolt,  AdcResult.ADCRESULT4);
+//    Adc_CalcValue(sApp.loadDetectVolt,  AdcResult.ADCRESULT5);
+
+#elif Build_Option == Build_Inverter_Fix  // only inverter
+    //Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
+    Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
+    Adc_CalcValue(pApp->inverterCurr,     AdcResult.ADCRESULT2);
+    //Adc_CalcValue(pApp->boostCurr,       AdcResult.ADCRESULT3);
+    //Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
+    //Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
+
+
+#elif Build_Option == Build_Inverter_All // all feature regardless AC and LOAD
+    //Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
+    Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
+    Adc_CalcValue(pApp->inverterCurr,     AdcResult.ADCRESULT2);
+    //Adc_CalcValue(pApp->boostCurr,       AdcResult.ADCRESULT3);
+    //Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
+    //Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
+
+#elif Build_Option == Build_Ups_All      // all device feature
+    Adc_CalcValue(pApp->battVolt,        AdcResult.ADCRESULT0);
+    Adc_CalcValue(pApp->boostVolt,       AdcResult.ADCRESULT1);
+    Adc_CalcValue(pApp->inverterCurr,    AdcResult.ADCRESULT2);
+    Adc_CalcValue(pApp->boostCurr,       AdcResult.ADCRESULT3);
+    Adc_CalcValue(pApp->lineDetectVolt,  AdcResult.ADCRESULT4);
+    Adc_CalcValue(pApp->loadDetectVolt,  AdcResult.ADCRESULT5);
+#endif
+
+    /*
+     * Control duty cycle
+     */
+
+#if 1
+    if(sApp.sInverter.eState == INV_RUNNING) {
+        //counter++;
+        //if(counter >= pApp->sInverter.genSinRatio)
+        {
+            //counter = 0;
+            Sin_GenValueM(&sApp.sInverter.sSine1Phase);
+            sApp.sInverter.pwm1Handle->CMPA.half.CMPA =
+                    _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmA,
+                             sApp.sInverter.pwm1Handle->TBPRD>>1);
+
+            sApp.sInverter.pwm2Handle->CMPA.half.CMPA =
+                    _IQ24mpy(sApp.sInverter.sSine1Phase.sinPwmB,
+                             sApp.sInverter.pwm2Handle->TBPRD>>1);
+
+        }
+    }
+
+#endif
+
+    if(sApp.eDevState == DS_RUN_UPS) {
+        Boost_Process(&sApp.sBooster, sApp.boostVolt.realValue);
+    }
+
+#endif
     // Clear ADCINT1 flag reinitialize for next SOC
     AdcRegs.ADCINTFLGCLR.bit.ADCINT1 = 1;
 
     // Acknowledge interrupt to PIE
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
+
 }
 
 

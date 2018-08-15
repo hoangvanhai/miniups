@@ -131,7 +131,7 @@ typedef struct SApp_ {
     BOOL            bDevLocked;     // device is locked by error in operate
 
     int16_t         numRAOCL;       // times restart after overcurrent
-    int16_t         numTripOccurs;
+    int16_t         numTripOccurs;  // inverter current trip
 
     void            *hTimerControl;
     void            *hTimerProtectOverCurrent;
@@ -162,7 +162,8 @@ typedef struct SApp_ {
                                                     adc.totalValue = 0;\
                                                 } \
                                             } else { \
-                                                adc.sEMA.In = _IQ20(value - adc.offset); \
+                                                if(value <= adc.offset) adc.sEMA.In = 0; \
+                                                else adc.sEMA.In = _IQ20(value - adc.offset); \
                                                 MATH_EMAVG_IQ_C(adc.sEMA); \
                                                 adc.realValue = _IQ18mpyIQX(adc.coeff, 24, adc.sEMA.Out, 20); \
                                             } \
@@ -180,6 +181,8 @@ typedef struct SApp_ {
                                             (adc).coeff = coe;      \
                      MATH_EMAVG_IQ_C_INIT(adc.sEMA, _IQ30(2*PI* (fc) / Inverter_Pwm_Freq)); \
                                             }
+
+
 
 #define App_StartBstInv(pApp)       { \
                                         Inv_Start(&(pApp)->sInverter);      \

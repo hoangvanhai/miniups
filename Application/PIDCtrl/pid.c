@@ -76,12 +76,12 @@ void PID_Init(SPID *pPid, _iq Kp, _iq Ki, _iq Kd, _iq T) {
  *  @note
  */
 
-void PID_Process(SPID *pPid, _iq setPoint, _iq feedBack)     {
-    (pPid)->currErr       = setPoint - feedBack;
-    (pPid)->Proportional  = _IQ24mpy((pPid)->KP, (pPid)->currErr);
-    (pPid)->Integration  += _IQ24mpy((pPid)->KI, (pPid)->currErr + (pPid)->prevErr);
-    (pPid)->Derative      = _IQ24mpy((pPid)->KD, (pPid)->currErr - (pPid)->prevErr);
-    (pPid)->prevErr       = (pPid)->currErr;
-    (pPid)->PIDOut        = (pPid)->Proportional + (pPid)->Integration + (pPid)->Derative;
-}
+//void PID_Process(SPID *pPid, _iq setPoint, _iq feedBack)     {
+//    (pPid)->currErr       = setPoint - feedBack;
+//    (pPid)->Proportional  = _IQ24mpy((pPid)->KP, (pPid)->currErr);
+//    (pPid)->Integration  += _IQ24mpy((pPid)->KI, (pPid)->currErr + (pPid)->prevErr);
+//    (pPid)->Derative      = _IQ24mpy((pPid)->KD, (pPid)->currErr - (pPid)->prevErr);
+//    (pPid)->prevErr       = (pPid)->currErr;
+//    (pPid)->PIDOut        = (pPid)->Proportional + (pPid)->Integration + (pPid)->Derative;
+//}
 

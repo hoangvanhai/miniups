@@ -34,11 +34,11 @@
 #include <console.h>
 /************************** Constant Definitions *****************************/
 // for [50 : 60] -> 34VAC
-#define A_COEFF         62.3917748105776
-#define B_COEFF         110.0
+//#define A_COEFF         62.3917748105776
+//#define B_COEFF         110.0
 // for [320 : 350] -> 220VAC
-//#define A_COEFF         -359.981634058608
-//#define B_COEFF         670.0
+#define A_COEFF         -359.981634058608
+#define B_COEFF         670.0
 // for [160 : 300] -> 100VAC
 //#define A_COEFF         (-339.981634058608)
 //#define B_COEFF         460
@@ -64,7 +64,7 @@ typedef struct SInverter_ {
     uint16_t        genSinRatio;
     uint32_t        freq;           // pwm freq
     uint16_t        period;         // pwm period
-    uint16_t        dutyv;          // duty value
+    uint16_t        dutyValue;          // duty value
     _iq             currFbFact;
     _iq             currGain;
     _iq             gainMax;
@@ -79,7 +79,9 @@ typedef struct SInverter_ {
 #define Inv_GetGain(pInv)           (pInv)->sSine1Phase.gain
 #define Inv_GetGainStep(pInv)       (pInv)->gainStep
 
-
+#define Inv_SetGain(pInv, val)        { \
+                                    (pInv)->sSine1Phase.gain = val; \
+                                    }
 /*
  Function to calculate value of duty for stable voltage output:
 
@@ -93,8 +95,6 @@ void Inv_Init(SInverter *pInv);
 void Inv_Start(SInverter *pInv);
 void Inv_Stop(SInverter *pInv);
 void Inv_Set(SInverter *pInv, uint16_t chan, _iq percen);
-void Inv_SetGain(SInverter *pInv, _iq gain);
-void Inv_Apply(SInverter *pInv);
 void PWM_Inv_Init(PWM_REGS * pwm1, PWM_REGS * pwm2, uint32_t freq);
 
 
